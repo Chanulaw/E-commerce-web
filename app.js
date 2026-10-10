@@ -541,7 +541,7 @@
   const canHover = matchMedia('(hover: hover)').matches;
   const heroVideo = $('#heroVideo');
   let heroVisible = true;
-  PRODUCTS.forEach(p => { p.img = `product-${p.id}.webp`; p.still = `product-${p.id}-still.jpg`; });
+  PRODUCTS.forEach(p => { p.img = `images/product-${p.id}.webp`; p.still = `images/product-${p.id}-still.jpg`; });
 
   /* cards show a light still image, and play the animation on hover or focus (touch screens play it straight away) */
   function mediaTag(p) {
