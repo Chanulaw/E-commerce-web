@@ -1,295 +1,374 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AuraMart | Universal E-Commerce Store</title>
-    <link rel="stylesheet" href="style.css">
-    <!-- Google Fonts for Editorial Aesthetic -->
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ShopWave - Online Store</title>
+<meta name="description" content="ShopWave: shop electronics, clothing and food & drink with a fast, accessible basket and checkout.">
+<link rel="stylesheet" href="styles.css">
 </head>
-<body class="theme-default">
+<body>
+<a class="skip-link" href="#main">Skip to main content</a>
 
-    <div class="promo-strip">
-        <div class="container promo-strip-inner">
-            <span>Free delivery over $50</span>
-            <span>Flash deals every day</span>
-            <span>Secure checkout</span>
+<div class="promo-bar" role="note">
+  <span>🚚 Free delivery on orders over Rs. 15,000</span>
+  <span class="dot" aria-hidden="true">•</span>
+  <span>🏷️ Use code <strong>SAVE10</strong> for 10% off</span>
+</div>
+
+<header class="site-header" id="top">
+  <div class="container header-row">
+    <a href="#top" class="logo" aria-label="ShopWave home">
+      <span class="logo-mark" aria-hidden="true">🛍️</span><span>Shop<b>Wave</b></span>
+    </a>
+
+    <form class="search" role="search" id="searchForm" autocomplete="off">
+      <label for="searchInput" class="sr-only">Search products</label>
+      <input id="searchInput" type="search" placeholder="Search headphones, tea, shoes…"
+             role="combobox" aria-expanded="false" aria-controls="suggestions" aria-autocomplete="list">
+      <button type="submit" class="search-btn" aria-label="Search"><span aria-hidden="true">🔍</span></button>
+      <ul id="suggestions" class="suggestions" role="listbox" aria-label="Search suggestions" hidden></ul>
+    </form>
+
+    <div class="header-actions">
+      <div class="a11y-wrap">
+        <button class="hbtn" id="a11yBtn" aria-expanded="false" aria-controls="a11yPanel">
+          <span aria-hidden="true">♿</span><span class="hbtn-text">Display</span>
+        </button>
+        <div class="a11y-panel" id="a11yPanel" hidden>
+          <fieldset>
+            <legend>Theme</legend>
+            <label><input type="radio" name="theme" value="light" checked> Light</label>
+            <label><input type="radio" name="theme" value="dark"> Dark</label>
+            <label><input type="radio" name="theme" value="contrast"> High contrast</label>
+          </fieldset>
+          <fieldset>
+            <legend>Text size</legend>
+            <div class="size-row">
+              <button type="button" class="chip" id="sizeDown" aria-label="Decrease text size">A−</button>
+              <button type="button" class="chip" id="sizeReset" aria-label="Reset text size">A</button>
+              <button type="button" class="chip" id="sizeUp" aria-label="Increase text size">A+</button>
+            </div>
+          </fieldset>
+          <label class="check-row"><input type="checkbox" id="motionToggle"> Reduce animations</label>
         </div>
+      </div>
+      <button class="hbtn" id="wishBtn" aria-label="Wishlist">
+        <span aria-hidden="true">♡</span><span class="hbtn-text">Wishlist</span>
+        <span class="badge" id="wishCount" aria-hidden="true">0</span>
+      </button>
+      <button class="hbtn" id="ordersBtn" aria-label="My orders">
+        <span aria-hidden="true">📦</span><span class="hbtn-text">Orders</span>
+      </button>
+      <button class="hbtn hbtn-cart" id="cartBtn" aria-label="Open basket, 0 items">
+        <span aria-hidden="true">🛒</span><span class="hbtn-text">Basket</span>
+        <span class="badge" id="cartCount" aria-hidden="true">0</span>
+      </button>
+    </div>
+  </div>
+  <nav class="cat-nav" aria-label="Product categories">
+    <div class="container" id="catNav"></div>
+  </nav>
+</header>
+
+<main id="main">
+  <!-- HERO CAROUSEL -->
+  <section class="hero container" aria-roledescription="carousel" aria-label="Featured offers" id="hero">
+    <div class="slides" id="slides" aria-live="off">
+      <article class="slide active" aria-roledescription="slide" aria-label="1 of 3" style="--g1:#4338ca;--g2:#7c3aed">
+        <div class="slide-text">
+          <p class="eyebrow">New season • Electronics</p>
+          <h1>Sound, power &amp; smart tech for every day</h1>
+          <p>Headphones, smart watches and speakers from Rs. 9,750.</p>
+          <button class="btn btn-accent" data-shop="electronics">Shop Electronics</button>
+        </div>
+        <div class="slide-art" aria-hidden="true"><span class="float f1">🎧</span><span class="float f2">⌚</span><span class="float f3">🔊</span></div>
+      </article>
+      <article class="slide" aria-roledescription="slide" aria-label="2 of 3" style="--g1:#0f766e;--g2:#0891b2" inert>
+        <div class="slide-text">
+          <p class="eyebrow">Style • Clothing</p>
+          <h2>Wear it your way</h2>
+          <p>Comfortable tees, timeless denim and shoes built to run.</p>
+          <button class="btn btn-accent" data-shop="clothing">Shop Clothing</button>
+        </div>
+        <div class="slide-art" aria-hidden="true"><span class="float f1">👕</span><span class="float f2">🧥</span><span class="float f3">👟</span></div>
+      </article>
+      <article class="slide" aria-roledescription="slide" aria-label="3 of 3" style="--g1:#b45309;--g2:#be123c" inert>
+        <div class="slide-text">
+          <p class="eyebrow">Taste of Sri Lanka • Food &amp; Drink</p>
+          <h2>Pure Ceylon flavours, delivered</h2>
+          <p>Tea gift boxes, virgin coconut oil and fine chocolate.</p>
+          <button class="btn btn-accent" data-shop="food">Shop Food &amp; Drink</button>
+        </div>
+        <div class="slide-art" aria-hidden="true"><span class="float f1">🍵</span><span class="float f2">🥥</span><span class="float f3">🍫</span></div>
+      </article>
+    </div>
+    <div class="hero-controls">
+      <button class="icon-btn" id="prevSlide" aria-label="Previous slide">‹</button>
+      <div class="dots" id="dots" role="group" aria-label="Choose slide"></div>
+      <button class="icon-btn" id="pauseSlide" aria-label="Pause slideshow" aria-pressed="false">⏸</button>
+      <button class="icon-btn" id="nextSlide" aria-label="Next slide">›</button>
+    </div>
+  </section>
+
+  <!-- TRUST STRIP -->
+  <section class="container trust reveal" aria-label="Why shop with us">
+    <div><span aria-hidden="true">🚚</span><div><strong>Free delivery</strong><small>Over Rs. 15,000</small></div></div>
+    <div><span aria-hidden="true">🔒</span><div><strong>Secure checkout</strong><small>Demo payment, no real charges</small></div></div>
+    <div><span aria-hidden="true">↩️</span><div><strong>Easy returns</strong><small>14-day policy</small></div></div>
+    <div><span aria-hidden="true">💬</span><div><strong>Friendly support</strong><small>Mon–Sat, 9am–6pm</small></div></div>
+  </section>
+
+  <!-- PRODUCTS -->
+  <section class="container products-section" id="products" aria-labelledby="productsTitle">
+    <div class="section-head reveal">
+      <h2 id="productsTitle">Shop all products</h2>
+      <p id="resultInfo" class="muted" role="status" aria-live="polite"></p>
     </div>
 
-    <!-- Accessibility Floating Control Bar -->
-    <header class="accessibility-bar">
-        <div class="container bar-content">
-            <span class="brand-tag">Smart Shopping. Better Living.</span>
-            <div class="bar-actions">
-                <button id="login-btn" class="top-login-btn" aria-label="Login or create an account">Login / Sign up</button>
-                <div class="accessibility-controls">
-                    <button id="toggle-contrast" aria-label="Toggle High Contrast Mode">High Contrast</button>
-                    <button id="font-decrease" aria-label="Decrease Font Size">A-</button>
-                    <button id="font-reset" aria-label="Reset Font Size">A</button>
-                    <button id="font-increase" aria-label="Increase Font Size">A+</button>
-                </div>
-            </div>
-        </div>
-    </header>
-
-    <!-- Main Navigation Bar -->
-    <nav class="main-nav">
-        <div class="container nav-container">
-            <div class="brand-wrap">
-                <h1 class="logo">Aura<span>Mart</span></h1>
-                <div class="mini-links">
-                    <span>Electronics</span>
-                    <span>Clothing</span>
-                    <span>Food</span>
-                </div>
-            </div>
-            <div class="nav-actions">
-                <div class="search-box">
-                    <input type="text" id="search-input" placeholder="Search 10 products...">
-                </div>
-                <button id="cart-btn" class="cart-btn" aria-label="Open Shopping Basket">
-                    🛒 Basket <span id="cart-badge" class="badge">0</span>
-                </button>
-            </div>
-        </div>
-    </nav>
-
-    <!-- Hero Showcase Section -->
-    <header class="hero">
-        <div class="container hero-content animate-fade-in">
-            <div class="hero-badge">New Season Collection</div>
-            <h2>Smart essentials for everyday living</h2>
-            <p>Shop carefully curated essentials across electronics, fashion and gourmet food — designed to feel premium, accessible and easy to explore.</p>
-            <div class="hero-actions">
-                <button class="btn primary-btn">Shop now</button>
-                <button class="btn secondary-btn">Explore deals</button>
-            </div>
-            <div class="hero-stats">
-                <div><strong>10K+</strong><span>happy shoppers</span></div>
-                <div><strong>4.9/5</strong><span>average rating</span></div>
-                <div><strong>24h</strong><span>dispatch</span></div>
-            </div>
-        </div>
-    </header>
-
-    <section class="benefits container">
-        <div class="benefit-card">
-            <span>🚚</span>
-            <div>
-                <h4>Fast shipping</h4>
-                <p>Quick delivery across the country.</p>
-            </div>
-        </div>
-        <div class="benefit-card">
-            <span>🛡️</span>
-            <div>
-                <h4>Secure checkout</h4>
-                <p>Protected payments and trusted service.</p>
-            </div>
-        </div>
-        <div class="benefit-card">
-            <span>💬</span>
-            <div>
-                <h4>Customer support</h4>
-                <p>Friendly help whenever you need it.</p>
-            </div>
-        </div>
-    </section>
-
-    <!-- Main Content Area -->
-    <main class="container main-layout">
-        <!-- Category Filter Sidebar/Tabs -->
-        <aside class="filters-section" aria-label="Product Categories">
-            <h3>Categories</h3>
-            <div class="category-tabs" id="category-tabs">
-                <button class="tab-btn active" data-category="all">All Products (10)</button>
-                <button class="tab-btn" data-category="Electronics">Electronics (3)</button>
-                <button class="tab-btn" data-category="Clothing">Clothing (4)</button>
-                <button class="tab-btn" data-category="Food">Food (3)</button>
-            </div>
-
-            <div class="filter-box">
-                <h4>Featured</h4>
-                <ul>
-                    <li>Top rated</li>
-                    <li>Flash deals</li>
-                    <li>Gift ideas</li>
-                </ul>
-            </div>
-        </aside>
-
-        <!-- Product Grid -->
-        <section class="products-section">
-            <div class="section-head">
-                <div>
-                    <p class="eyebrow">Fresh picks</p>
-                    <h3>Popular this week</h3>
-                </div>
-                <div class="sort-box">
-                    <label for="sort-select">Sort:</label>
-                    <select id="sort-select">
-                        <option>Best match</option>
-                        <option>Lowest price</option>
-                        <option>Highest price</option>
-                        <option>Top rated</option>
-                    </select>
-                </div>
-            </div>
-            <div id="product-grid" class="product-grid">
-                <!-- Dynamically rendered via app.js -->
-            </div>
-        </section>
-    </main>
-
-    <!-- Login / Account Modal -->
-    <div id="login-modal" class="modal-overlay hidden" aria-hidden="true">
-        <div class="modal-content animate-slide-up">
-            <div class="modal-header">
-                <h3 id="auth-title">Sign in to your account</h3>
-                <button id="close-login" class="close-btn" aria-label="Close Login">&times;</button>
-            </div>
-
-            <div id="auth-panel">
-                <section id="login-view" class="auth-view">
-                    <form id="login-form" class="auth-form">
-                        <div class="form-group">
-                            <label for="login-email">Email</label>
-                            <input type="email" id="login-email" required placeholder="user@email.com">
-                        </div>
-                        <div class="form-group">
-                            <label for="login-password">Password</label>
-                            <input type="password" id="login-password" required placeholder="Enter your password">
-                        </div>
-                        <button type="submit" class="btn primary-btn full-width">Sign In</button>
-                    </form>
-                    <p class="auth-switch">New to AuraMart? <button type="button" id="show-signup">Create an account</button></p>
-                </section>
-
-                <section id="signup-view" class="auth-view" hidden>
-                    <form id="signup-form" class="auth-form">
-                        <div class="form-group">
-                            <label for="signup-name">Full Name</label>
-                            <input type="text" id="signup-name" required placeholder="Your full name">
-                        </div>
-                        <div class="form-group">
-                            <label for="signup-email">Email</label>
-                            <input type="email" id="signup-email" required placeholder="your@email.com">
-                        </div>
-                        <div class="form-group">
-                            <label for="signup-password">Password</label>
-                            <input type="password" id="signup-password" required placeholder="Create a password">
-                        </div>
-                        <button type="submit" class="btn primary-btn full-width">Create Account</button>
-                    </form>
-                    <p class="auth-switch">Already have an account? <button type="button" id="show-login">Sign in</button></p>
-                </section>
-            </div>
-        </div>
+    <div class="toolbar reveal">
+      <div class="chips" id="chipRow" role="group" aria-label="Filter by category"></div>
+      <div class="tool-fields">
+        <label class="field-inline">Sort by
+          <select id="sortSelect">
+            <option value="featured">Featured</option>
+            <option value="price-asc">Price: low to high</option>
+            <option value="price-desc">Price: high to low</option>
+            <option value="rating">Customer rating</option>
+            <option value="name">Name A–Z</option>
+          </select>
+        </label>
+        <label class="field-inline">Max price: <output id="priceOut">Rs. 25,000</output>
+          <input type="range" id="priceRange" min="1000" max="25000" step="250" value="25000">
+        </label>
+        <label class="check-inline"><input type="checkbox" id="stockOnly"> In stock only</label>
+        <button class="btn btn-ghost btn-sm" id="clearFilters" type="button">Clear filters</button>
+      </div>
     </div>
 
-    <!-- User Profile Account Panel -->
-    <div id="account-panel" class="account-panel hidden">
-        <div class="account-header">
-            <div>
-                <p class="eyebrow small">My account</p>
-                <h3 id="account-name">Customer</h3>
-            </div>
-            <button id="logout-btn" class="btn secondary-btn small-btn">Logout</button>
-        </div>
-
-        <div class="account-tabs">
-            <button class="account-tab active" data-tab="overview">Overview</button>
-            <button class="account-tab" data-tab="orders">Orders</button>
-            <button class="account-tab" data-tab="saved">Saved Items</button>
-        </div>
-
-        <div id="account-overview" class="account-content active">
-            <div class="account-card">
-                <h4>Profile</h4>
-                <p><strong>Email:</strong> <span id="account-email">-</span></p>
-                <p><strong>Member since:</strong> <span id="account-date">-</span></p>
-            </div>
-            <div class="account-card">
-                <h4>Shopping summary</h4>
-                <p><strong>Saved items:</strong> <span id="saved-count">0</span></p>
-                <p><strong>Orders placed:</strong> <span id="orders-count">0</span></p>
-                <p><strong>Total spend:</strong> <span id="total-spend">$0.00</span></p>
-            </div>
-        </div>
-
-        <div id="account-orders" class="account-content">
-            <ul id="orders-list" class="account-list"></ul>
-        </div>
-
-        <div id="account-saved" class="account-content">
-            <ul id="saved-list" class="account-list"></ul>
-        </div>
+    <div class="grid" id="grid" aria-live="polite"></div>
+    <div class="empty" id="emptyState" hidden>
+      <div class="empty-icon" aria-hidden="true">🔎</div>
+      <h3>No products match your filters</h3>
+      <p>Try a different search term or clear your filters.</p>
+      <button class="btn btn-primary" id="emptyClear" type="button">Clear filters</button>
     </div>
+  </section>
 
-    <!-- Shopping Basket Slide-out Drawer / Modal -->
-    <div id="cart-modal" class="modal-overlay hidden" aria-hidden="true">
-        <div class="modal-content animate-slide-up">
-            <div class="modal-header">
-                <h3>Your Shopping Basket</h3>
-                <button id="close-cart" class="close-btn" aria-label="Close Basket">&times;</button>
-            </div>
-            <div class="cart-items-container" id="cart-items-list">
-                <!-- Cart Items rendered here -->
-            </div>
-            <div class="cart-footer">
-                <div class="cart-total">
-                    <span>Total:</span>
-                    <span id="cart-total-price">$0.00</span>
-                </div>
-                <button id="checkout-btn" class="btn primary-btn">Proceed to Mock Checkout</button>
-            </div>
-        </div>
+  <!-- NEWSLETTER -->
+  <section class="container reveal">
+    <form class="newsletter" id="newsForm" novalidate>
+      <div>
+        <h2>Get deals before everyone else</h2>
+        <p>Join our newsletter for new arrivals and exclusive codes.</p>
+      </div>
+      <div class="news-field">
+        <label for="newsEmail" class="sr-only">Email address</label>
+        <input id="newsEmail" type="email" placeholder="you@example.com" autocomplete="email" aria-describedby="newsErr">
+        <button class="btn btn-accent" type="submit">Subscribe</button>
+      </div>
+      <p class="error" id="newsErr" role="alert"></p>
+    </form>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="container foot-grid">
+    <div>
+      <p class="logo foot-logo"><span aria-hidden="true">🛍️</span> Shop<b>Wave</b></p>
+      <p class="muted">A demo store built with HTML, CSS and JavaScript for the Human Computer Interaction module.</p>
     </div>
-
-    <!-- Mock Checkout Modal -->
-    <div id="checkout-modal" class="modal-overlay hidden" aria-hidden="true">
-        <div class="modal-content animate-slide-up">
-            <div class="modal-header">
-                <h3>Mock Checkout & Payment</h3>
-                <button id="close-checkout" class="close-btn">&times;</button>
-            </div>
-            <form id="checkout-form" class="checkout-form">
-                <div class="form-group">
-                    <label for="fullname">Full Name</label>
-                    <input type="text" id="fullname" required placeholder="Chanula Wijayarathne">
-                </div>
-                <div class="form-group">
-                    <label for="address">Shipping Address</label>
-                    <textarea id="address" rows="2" required placeholder="CINEC Campus, Malabe"></textarea>
-                </div>
-                <div class="form-group">
-                    <label for="card">Mock Credit Card Number</label>
-                    <input type="text" id="card" required placeholder="4242 •••• •••• 4242" maxlength="16">
-                </div>
-                <button type="submit" class="btn primary-btn full-width">Complete Secure Payment</button>
-            </form>
-        </div>
+    <div>
+      <h3>Shop</h3>
+      <ul id="footCats"></ul>
     </div>
-
-    <!-- Order Success Modal -->
-    <div id="success-modal" class="modal-overlay hidden">
-        <div class="modal-content text-center animate-scale-in">
-            <div class="success-icon">🎉</div>
-            <h3>Order Placed Successfully!</h3>
-            <p>Thank you for testing the AuraMart e-commerce mock workflow. Your localStorage has been cleared.</p>
-            <button id="finish-btn" class="btn primary-btn">Back to Store</button>
-        </div>
+    <div>
+      <h3>Help</h3>
+      <ul>
+        <li><a href="#products">Browse products</a></li>
+        <li><button class="link-btn" id="footOrders">Track my orders</button></li>
+        <li><button class="link-btn" id="resetDemo">Reset demo data</button></li>
+      </ul>
     </div>
+    <div>
+      <h3>Demo tips</h3>
+      <ul class="tips">
+        <li>Promo codes: <strong>SAVE10</strong>, <strong>WELCOME5</strong></li>
+        <li>Test card: <strong>4242 4242 4242 4242</strong></li>
+        <li>Any future expiry, any 3-digit CVV</li>
+      </ul>
+    </div>
+  </div>
+  <p class="copy container">© 2026 ShopWave demo store. No real payments are processed.</p>
+</footer>
 
-    <!-- Footer -->
-    <footer class="site-footer">
-        <div class="container">
-            <p>&copy; 2026 AuraMart HCI Group Assignment. Designed with Vanilla HTML, CSS, and JS.</p>
+<button class="to-top" id="toTop" aria-label="Back to top" hidden>↑</button>
+
+<!-- QUICK VIEW -->
+<div class="overlay" id="productOverlay" hidden>
+  <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="pmName" tabindex="-1">
+    <button class="icon-btn modal-close" data-close aria-label="Close product details">✕</button>
+    <div class="pm-grid">
+      <div class="pm-media" id="pmMedia" role="img" aria-label=""></div>
+      <div class="pm-info">
+        <p class="cat-label" id="pmCat"></p>
+        <h2 id="pmName"></h2>
+        <div id="pmRating"></div>
+        <p class="price-row" id="pmPrice"></p>
+        <p id="pmDesc"></p>
+        <ul class="feat" id="pmFeat"></ul>
+        <p class="stock-line" id="pmStock"></p>
+        <div class="pm-actions">
+          <div class="qty" id="pmQty" role="group" aria-label="Quantity">
+            <button type="button" id="pmMinus" aria-label="Decrease quantity">−</button>
+            <output id="pmQtyVal" aria-live="polite">1</output>
+            <button type="button" id="pmPlus" aria-label="Increase quantity">+</button>
+          </div>
+          <button class="btn btn-primary btn-lg" id="pmAdd">Add to basket</button>
+          <button class="btn btn-ghost" id="pmWish" aria-pressed="false">♡ Save</button>
         </div>
-    </footer>
+      </div>
+    </div>
+  </div>
+</div>
 
-    <script src="app.js"></script>
+<!-- BASKET DRAWER -->
+<div class="overlay drawer-overlay" id="cartOverlay" hidden>
+  <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="cartTitle" tabindex="-1">
+    <div class="drawer-head">
+      <h2 id="cartTitle">Your basket</h2>
+      <button class="icon-btn" data-close aria-label="Close basket">✕</button>
+    </div>
+    <div class="ship-progress" id="shipProgress"></div>
+    <div class="drawer-body" id="cartItems"></div>
+    <div class="drawer-foot" id="cartFoot">
+      <form class="promo" id="promoForm" novalidate>
+        <label for="promoInput">Promo code</label>
+        <div class="promo-row">
+          <input id="promoInput" type="text" placeholder="e.g. SAVE10" autocomplete="off" aria-describedby="promoMsg">
+          <button class="btn btn-ghost" type="submit">Apply</button>
+        </div>
+        <p id="promoMsg" class="promo-msg" role="status"></p>
+      </form>
+      <dl class="totals" id="cartTotals"></dl>
+      <button class="btn btn-primary btn-block btn-lg" id="checkoutBtn">Proceed to checkout</button>
+      <button class="link-btn center" id="clearCartBtn">Empty basket</button>
+    </div>
+  </aside>
+</div>
+
+<!-- WISHLIST -->
+<div class="overlay" id="wishOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="wishTitle" tabindex="-1">
+    <button class="icon-btn modal-close" data-close aria-label="Close wishlist">✕</button>
+    <h2 id="wishTitle">Your wishlist</h2>
+    <div id="wishItems"></div>
+  </div>
+</div>
+
+<!-- ORDERS -->
+<div class="overlay" id="ordersOverlay" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="ordersTitle" tabindex="-1">
+    <button class="icon-btn modal-close" data-close aria-label="Close orders">✕</button>
+    <h2 id="ordersTitle">My orders</h2>
+    <div id="ordersList"></div>
+  </div>
+</div>
+
+<!-- CHECKOUT -->
+<div class="overlay" id="checkoutOverlay" hidden>
+  <div class="modal modal-checkout" role="dialog" aria-modal="true" aria-labelledby="coTitle" tabindex="-1">
+    <button class="icon-btn modal-close" data-close aria-label="Close checkout">✕</button>
+    <h2 id="coTitle">Checkout</h2>
+    <ol class="steps" id="steps" aria-label="Checkout progress">
+      <li class="current" aria-current="step"><span>1</span> Delivery</li>
+      <li><span>2</span> Payment</li>
+      <li><span>3</span> Review</li>
+    </ol>
+
+    <div class="co-layout">
+      <div class="co-main">
+        <!-- STEP 1 -->
+        <form class="step-panel" id="step1" novalidate>
+          <h3 tabindex="-1">Delivery details</h3>
+          <p class="muted small">Fields marked <span class="req">*</span> are required.</p>
+          <div class="form-grid">
+            <div class="field span2"><label for="fullName">Full name <span class="req">*</span></label>
+              <input id="fullName" autocomplete="name" aria-describedby="err-fullName"><p class="error" id="err-fullName"></p></div>
+            <div class="field"><label for="email">Email <span class="req">*</span></label>
+              <input id="email" type="email" autocomplete="email" aria-describedby="err-email"><p class="error" id="err-email"></p></div>
+            <div class="field"><label for="phone">Phone <span class="req">*</span></label>
+              <input id="phone" type="tel" autocomplete="tel" placeholder="+94 77 123 4567" aria-describedby="err-phone"><p class="error" id="err-phone"></p></div>
+            <div class="field span2"><label for="address">Street address <span class="req">*</span></label>
+              <input id="address" autocomplete="street-address" aria-describedby="err-address"><p class="error" id="err-address"></p></div>
+            <div class="field"><label for="city">City <span class="req">*</span></label>
+              <input id="city" autocomplete="address-level2" aria-describedby="err-city"><p class="error" id="err-city"></p></div>
+            <div class="field"><label for="postal">Postal code <span class="req">*</span></label>
+              <input id="postal" inputmode="numeric" autocomplete="postal-code" aria-describedby="err-postal"><p class="error" id="err-postal"></p></div>
+          </div>
+          <div class="step-actions">
+            <button type="button" class="btn btn-ghost" data-close>Back to basket</button>
+            <button type="submit" class="btn btn-primary">Continue to payment</button>
+          </div>
+        </form>
+
+        <!-- STEP 2 -->
+        <form class="step-panel" id="step2" novalidate hidden>
+          <h3 tabindex="-1">Payment method</h3>
+          <div class="pay-options" role="radiogroup" aria-label="Payment method">
+            <label class="pay-opt"><input type="radio" name="pay" value="card" checked><span>💳 Credit / debit card</span></label>
+            <label class="pay-opt"><input type="radio" name="pay" value="cod"><span>💵 Cash on delivery</span></label>
+          </div>
+          <div id="cardFields" class="form-grid">
+            <div class="field span2"><label for="cardName">Name on card <span class="req">*</span></label>
+              <input id="cardName" autocomplete="cc-name" aria-describedby="err-cardName"><p class="error" id="err-cardName"></p></div>
+            <div class="field span2"><label for="cardNumber">Card number <span class="req">*</span></label>
+              <input id="cardNumber" inputmode="numeric" autocomplete="cc-number" placeholder="4242 4242 4242 4242" maxlength="23" aria-describedby="err-cardNumber"><p class="error" id="err-cardNumber"></p></div>
+            <div class="field"><label for="expiry">Expiry (MM/YY) <span class="req">*</span></label>
+              <input id="expiry" inputmode="numeric" autocomplete="cc-exp" placeholder="08/29" maxlength="5" aria-describedby="err-expiry"><p class="error" id="err-expiry"></p></div>
+            <div class="field"><label for="cvv">CVV <span class="req">*</span></label>
+              <input id="cvv" inputmode="numeric" autocomplete="cc-csc" placeholder="123" maxlength="4" aria-describedby="err-cvv"><p class="error" id="err-cvv"></p></div>
+            <p class="hint span2">🔒 Demo only: use test card <strong>4242 4242 4242 4242</strong>. Nothing is charged.</p>
+          </div>
+          <div class="step-actions">
+            <button type="button" class="btn btn-ghost" id="back1">Back</button>
+            <button type="submit" class="btn btn-primary">Review order</button>
+          </div>
+        </form>
+
+        <!-- STEP 3 -->
+        <form class="step-panel" id="step3" novalidate hidden>
+          <h3 tabindex="-1">Review &amp; place order</h3>
+          <div class="review" id="reviewBox"></div>
+          <label class="check-row"><input type="checkbox" id="terms" aria-describedby="err-terms"> I agree to the terms and the 14-day returns policy.</label>
+          <p class="error" id="err-terms"></p>
+          <div class="step-actions">
+            <button type="button" class="btn btn-ghost" id="back2">Back</button>
+            <button type="submit" class="btn btn-accent btn-lg" id="placeBtn">Place order</button>
+          </div>
+        </form>
+
+        <!-- SUCCESS -->
+        <div class="step-panel success" id="step4" hidden>
+          <div class="check-anim" aria-hidden="true">✓</div>
+          <h3 tabindex="-1">Thank you, your order is confirmed!</h3>
+          <p>Order number <strong id="orderNo"></strong></p>
+          <p class="muted" id="orderMsg"></p>
+          <div class="step-actions center">
+            <button class="btn btn-ghost" id="viewOrders">View my orders</button>
+            <button class="btn btn-primary" id="keepShopping">Continue shopping</button>
+          </div>
+        </div>
+      </div>
+
+      <aside class="co-summary" id="coSummary" aria-label="Order summary"></aside>
+    </div>
+  </div>
+</div>
+
+<div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
+<div class="sr-only" id="live" role="status" aria-live="polite"></div>
+
+<script src="app.js"></script>
 </body>
 </html>
