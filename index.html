@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraMart | Universal E-Commerce Store</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts for Editorial Aesthetic -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="theme-default">
+
+    <!-- Accessibility Floating Control Bar -->
+    <header class="accessibility-bar">
+        <div class="container bar-content">
+            <span class="brand-tag">Smart Shopping. Better Living.</span>
+            <div class="accessibility-controls">
+                <button id="toggle-contrast" aria-label="Toggle High Contrast Mode">High Contrast</button>
+                <button id="font-decrease" aria-label="Decrease Font Size">A-</button>
+                <button id="font-reset" aria-label="Reset Font Size">A</button>
+                <button id="font-increase" aria-label="Increase Font Size">A+</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Navigation Bar -->
+    <nav class="main-nav">
+        <div class="container nav-container">
+            <h1 class="logo">Aura<span>Mart</span></h1>
+            <div class="nav-actions">
+                <div class="search-box">
+                    <input type="text" id="search-input" placeholder="Search 10 items...">
+                </div>
+                <button id="cart-btn" class="cart-btn" aria-label="Open Shopping Basket">
+                    🛒 Basket <span id="cart-badge" class="badge">0</span>
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Showcase Section -->
+    <header class="hero">
+        <div class="container hero-content animate-fade-in">
+            <h2>Refined Living, Universal Access</h2>
+            <p>Explore our curated collection of exactly 10 premium products across 3 distinct categories, built with universal design standards.</p>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="container main-layout">
+        <!-- Category Filter Sidebar/Tabs -->
+        <section class="filters-section" aria-label="Product Categories">
+            <h3>Categories</h3>
+            <div class="category-tabs" id="category-tabs">
+                <button class="tab-btn active" data-category="all">All Products (10)</button>
+                <button class="tab-btn" data-category="Electronics">Electronics</button>
+                <button class="tab-btn" data-category="Clothing">Clothing</button>
+                <button class="tab-btn" data-category="Food">Food</button>
+            </div>
+        </section>
+
+        <!-- Product Grid -->
+        <section class="products-section">
+            <div id="product-grid" class="product-grid">
+                <!-- Dynamically rendered via app.js -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Shopping Basket Slide-out Drawer / Modal -->
+    <div id="cart-modal" class="modal-overlay hidden" aria-hidden="true">
+        <div class="modal-content animate-slide-up">
+            <div class="modal-header">
+                <h3>Your Shopping Basket</h3>
+                <button id="close-cart" class="close-btn" aria-label="Close Basket">&times;</button>
+            </div>
+            <div class="cart-items-container" id="cart-items-list">
+                <!-- Cart Items rendered here -->
+            </div>
+            <div class="cart-footer">
+                <div class="cart-total">
+                    <span>Total:</span>
+                    <span id="cart-total-price">$0.00</span>
+                </div>
+                <button id="checkout-btn" class="btn primary-btn">Proceed to Mock Checkout</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mock Checkout Modal -->
+    <div id="checkout-modal" class="modal-overlay hidden" aria-hidden="true">
+        <div class="modal-content animate-slide-up">
+            <div class="modal-header">
+                <h3>Mock Checkout & Payment</h3>
+                <button id="close-checkout" class="close-btn">&times;</button>
+            </div>
+            <form id="checkout-form" class="checkout-form">
+                <div class="form-group">
+                    <label for="fullname">Full Name</label>
+                    <input type="text" id="fullname" required placeholder="Chanula Wijayarathne">
+                </div>
+                <div class="form-group">
+                    <label for="address">Shipping Address</label>
+                    <textarea id="address" rows="2" required placeholder="CINEC Campus, Malabe"></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="card">Mock Credit Card Number</label>
+                    <input type="text" id="card" required placeholder="4242 •••• •••• 4242" maxlength="16">
+                </div>
+                <button type="submit" class="btn primary-btn full-width">Complete Secure Payment</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Order Success Modal -->
+    <div id="success-modal" class="modal-overlay hidden">
+        <div class="modal-content text-center animate-scale-in">
+            <div class="success-icon">🎉</div>
+            <h3>Order Placed Successfully!</h3>
+            <p>Thank you for testing the AuraMart e-commerce mock workflow. Your localStorage has been cleared.</p>
+            <button id="finish-btn" class="btn primary-btn">Back to Store</button>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="container">
+            <p>&copy; 2026 AuraMart HCI Group Assignment. Designed with Vanilla HTML, CSS, and JS.</p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>
