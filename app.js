@@ -69,6 +69,7 @@
     $$('input[name=theme]').forEach(r => r.checked = r.value === prefs.theme);
     $('#motionToggle').checked = !!prefs.motion;
     store.set(KEYS.prefs, prefs);
+    syncMedia();
   }
   $$('input[name=theme]').forEach(r => r.addEventListener('change', () => { prefs.theme = r.value; applyPrefs(); }));
   $('#sizeUp').onclick = () => { prefs.size = Math.min(150, prefs.size + 10); applyPrefs(); announce('Text size ' + prefs.size + ' percent'); };
@@ -171,7 +172,7 @@
     const s = getStock(p.id), inWish = wish.includes(p.id);
     return `<article class="card" style="animation-delay:${i * 60}ms" data-id="${p.id}">
       <button class="wish" data-action="wish" aria-pressed="${inWish}" aria-label="${inWish ? 'Remove' : 'Add'} ${p.name} ${inWish ? 'from' : 'to'} wishlist">${inWish ? '♥' : '♡'}</button>
-      <button class="p-media" data-action="view" style="background:${grad(p)}" aria-label="View details for ${p.name}">${tagHtml(p)}<span class="p-emoji" aria-hidden="true">${p.emoji}</span></button>
+      <button class="p-media" data-action="view" style="background:${grad(p)}" aria-label="View details for ${p.name}">${tagHtml(p)}${mediaTag(p)}</button>
       <div class="p-body">
         <p class="cat-label">${catName(p.category)}</p>
         <button class="p-name" data-action="view">${p.name}</button>
@@ -192,7 +193,7 @@
   $('#grid').addEventListener('click', e => {
     const card = e.target.closest('.card'); if (!card) return;
     const id = Number(card.dataset.id), act = e.target.closest('[data-action]')?.dataset.action;
-    if (act === 'add') addToCart(id, 1, e.target.closest('.card').querySelector('.p-emoji'));
+    if (act === 'add') addToCart(id, 1, e.target.closest('.card').querySelector('.p-img, .p-emoji'));
     else if (act === 'wish') toggleWish(id);
     else if (act === 'view') openProduct(id);
   });
@@ -247,7 +248,7 @@
     const box = $('#wishItems');
     if (!wish.length) { box.innerHTML = '<div class="empty-cart"><div class="big" aria-hidden="true">💝</div><p>Your wishlist is empty. Tap the heart on any product to save it.</p></div>'; return; }
     box.innerHTML = wish.map(id => { const p = byId(id); const s = getStock(id); return `<div class="wish-line" data-id="${id}">
-      <div class="thumb" style="background:${grad(p)}" aria-hidden="true">${p.emoji}</div>
+      <div class="thumb" style="background:${grad(p)}" aria-hidden="true">${thumbImg(p)}</div>
       <div class="grow"><strong>${p.name}</strong><br><span class="muted">${money(p.price)}</span></div>
       <button class="btn btn-primary btn-sm" data-w="add" ${s === 0 ? 'disabled' : ''}>${s === 0 ? 'Out of stock' : 'Add'}</button>
       <button class="btn btn-ghost btn-sm" data-w="rm" aria-label="Remove ${p.name} from wishlist">Remove</button></div>`; }).join('');
@@ -263,7 +264,7 @@
   let pmId = null, pmQty = 1;
   function openProduct(id) {
     const p = byId(id); pmId = p.id; pmQty = 1;
-    const m = $('#pmMedia'); m.style.background = grad(p); m.innerHTML = `<span aria-hidden="true">${p.emoji}</span>`; m.setAttribute('aria-label', 'Illustration of ' + p.name);
+    const m = $('#pmMedia'); m.style.background = grad(p); m.innerHTML = `<img class="pm-img" src="${motionOff() ? p.still : p.img}" data-anim="${p.img}" data-still="${p.still}" data-emoji="${p.emoji}" alt="" width="512" height="512" decoding="async">`; m.setAttribute('aria-label', 'Illustration of ' + p.name);
     $('#pmCat').textContent = catName(p.category);
     $('#pmName').textContent = p.name;
     $('#pmRating').innerHTML = `<div class="rating">${starsHtml(p)} <span>${p.rating} out of 5 · ${p.reviews} reviews</span></div>`;
@@ -289,7 +290,7 @@
   function syncProductModalWish() { if (pmId == null) return; const w = wish.includes(pmId); const b = $('#pmWish'); b.setAttribute('aria-pressed', w); b.textContent = w ? '♥ Saved' : '♡ Save'; }
   $('#pmMinus').onclick = () => { pmQty--; refreshProductModal(); };
   $('#pmPlus').onclick = () => { pmQty++; refreshProductModal(); };
-  $('#pmAdd').onclick = () => { addToCart(pmId, pmQty, $('#pmMedia span')); refreshProductModal(); };
+  $('#pmAdd').onclick = () => { addToCart(pmId, pmQty, $('#pmMedia img, #pmMedia span')); refreshProductModal(); };
   $('#pmWish').onclick = () => toggleWish(pmId);
 
   /* ---------- basket ---------- */
@@ -348,7 +349,7 @@
       return;
     }
     box.innerHTML = ids.map(id => { const p = byId(id), q = cart[id]; return `<div class="line" data-id="${id}">
-      <div class="thumb" style="background:${grad(p)}" aria-hidden="true">${p.emoji}</div>
+      <div class="thumb" style="background:${grad(p)}" aria-hidden="true">${thumbImg(p)}</div>
       <div><h3>${p.name}</h3><div class="unit">${money(p.price)} each</div>
         <div class="line-actions">
           <div class="qty" role="group" aria-label="Quantity for ${p.name}">
@@ -509,7 +510,7 @@
   $('#prevSlide').onclick = () => { goSlide(cur - 1); startAuto(); };
   $('#nextSlide').onclick = () => { goSlide(cur + 1); startAuto(); };
   $('#dots').onclick = e => { const i = $$('.dot-btn').indexOf(e.target); if (i > -1) { goSlide(i); startAuto(); } };
-  $('#pauseSlide').onclick = e => { paused = !paused; e.currentTarget.setAttribute('aria-pressed', paused); e.currentTarget.textContent = paused ? '▶' : '⏸'; e.currentTarget.setAttribute('aria-label', paused ? 'Play slideshow' : 'Pause slideshow'); startAuto(); };
+  $('#pauseSlide').onclick = e => { paused = !paused; e.currentTarget.setAttribute('aria-pressed', paused); e.currentTarget.textContent = paused ? '▶' : '⏸'; e.currentTarget.setAttribute('aria-label', paused ? 'Play slideshow' : 'Pause slideshow'); syncHeroVideo(); startAuto(); };
   $('#hero').addEventListener('mouseenter', () => clearInterval(timer));
   $('#hero').addEventListener('mouseleave', startAuto);
   $('#hero').addEventListener('focusin', () => clearInterval(timer));
@@ -535,6 +536,88 @@
     Object.values(KEYS).forEach(k => { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } });
     location.reload();
   };
+
+  /* ---------- real media: animated images + videos ---------- */
+  const canHover = matchMedia('(hover: hover)').matches;
+  const heroVideo = $('#heroVideo');
+  let heroVisible = true;
+  PRODUCTS.forEach(p => { p.img = `product-${p.id}.webp`; p.still = `product-${p.id}-still.jpg`; });
+
+  /* cards show a light still image, and play the animation on hover or focus (touch screens play it straight away) */
+  function mediaTag(p) {
+    const src = (motionOff() || canHover) ? p.still : p.img;
+    return `<img class="p-img" src="${src}" data-anim="${p.img}" data-still="${p.still}" data-emoji="${p.emoji}" alt="" width="512" height="512" loading="lazy" decoding="async">`;
+  }
+  function thumbImg(p) {
+    return `<img src="${p.still}" data-still="${p.still}" data-emoji="${p.emoji}" alt="" width="64" height="64" loading="lazy" decoding="async">`;
+  }
+  function swapCardMedia(card, play) {
+    const im = card && card.querySelector('.p-img'); if (!im) return;
+    if (play && motionOff()) return;
+    const want = play ? im.dataset.anim : im.dataset.still;
+    if (!im.src.endsWith(want)) im.src = want;
+  }
+  const gridEl = $('#grid');
+  gridEl.addEventListener('mouseover', e => swapCardMedia(e.target.closest('.card'), true));
+  gridEl.addEventListener('mouseout', e => { const c = e.target.closest('.card'); if (canHover && c && !c.contains(e.relatedTarget)) swapCardMedia(c, false); });
+  gridEl.addEventListener('focusin', e => swapCardMedia(e.target.closest('.card'), true));
+  gridEl.addEventListener('focusout', e => { const c = e.target.closest('.card'); if (canHover && c && !c.contains(e.relatedTarget)) swapCardMedia(c, false); });
+
+  /* if an image file is missing, fall back to the still, then to the emoji, so the store never shows a broken picture */
+  document.addEventListener('error', e => {
+    const im = e.target;
+    if (!(im instanceof HTMLImageElement) || !im.dataset.still) return;
+    if (im.dataset.failed !== '1' && !im.src.endsWith(im.dataset.still)) { im.dataset.failed = '1'; im.src = im.dataset.still; return; }
+    if (im.classList.contains('hero-img')) { im.remove(); return; }
+    const fb = document.createElement('span'); fb.className = 'p-emoji'; fb.setAttribute('aria-hidden', 'true'); fb.textContent = im.dataset.emoji || '🛍️';
+    im.replaceWith(fb);
+  }, true);
+
+  /* animated images follow the Display panel and the device's reduced-motion setting */
+  function syncMedia() {
+    $$('img[data-anim]').forEach(im => {
+      const still = motionOff() || (im.classList.contains('p-img') && canHover);
+      const want = still ? im.dataset.still : im.dataset.anim;
+      if (!im.src.endsWith(want)) im.src = want;
+    });
+    syncHeroVideo();
+  }
+  /* the looping hero video stops for reduced motion, the Pause button, a hidden tab or when scrolled out of view */
+  function syncHeroVideo() {
+    if (!heroVideo) return;
+    if (motionOff() || paused || !heroVisible || document.hidden) heroVideo.pause();
+    else { const pr = heroVideo.play(); if (pr && pr.catch) pr.catch(() => {}); }
+  }
+  document.addEventListener('visibilitychange', syncHeroVideo);
+  if ('IntersectionObserver' in window) new IntersectionObserver(es => { heroVisible = es[0].isIntersecting; syncHeroVideo(); }).observe($('#hero'));
+  try { matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', () => { syncMedia(); startAuto(); }); } catch (e) { /* older browsers */ }
+
+  /* promo video: captions are built here so they also work when the page is opened straight from a folder */
+  const CUES = [
+    [0, 2.9, 'ShopWave logo appears with the line: Everything you love, one smooth basket.'],
+    [3.4, 7.0, 'Electronics: headphones, smart watch and speaker, from Rs. 9,750.'],
+    [7.5, 11.1, 'Clothing: cotton tee, denim jacket and running shoes, from Rs. 2,850.'],
+    [11.6, 15.2, 'Food and drink: Ceylon tea gift box, coconut oil and dark chocolate, from Rs. 1,250.'],
+    [15.7, 19.4, 'Free delivery over Rs. 15,000. Use code SAVE10 for 10% off. Shop now at ShopWave.']
+  ];
+  const promoVideo = $('#promoVideo');
+  (function setupPromoVideo() {
+    const ts = s => String(Math.floor(s / 60)).padStart(2, '0') + ':' + (s % 60).toFixed(3).padStart(6, '0');
+    const vtt = 'WEBVTT\n\n' + CUES.map(c => `${ts(c[0])} --> ${ts(c[1])}\n${c[2]}`).join('\n\n');
+    try {
+      const track = $('#promoTrack');
+      track.src = URL.createObjectURL(new Blob([vtt], { type: 'text/vtt' }));
+      track.track.mode = 'showing';
+    } catch (e) { /* captions are still in the transcript */ }
+    const list = $('#transcriptList');
+    list.innerHTML = CUES.map(c => `<li><button type="button" class="link-btn" data-t="${c[0]}" aria-label="Play from ${Math.floor(c[0])} seconds">${Math.floor(c[0] / 60)}:${String(Math.floor(c[0] % 60)).padStart(2, '0')}</button><span>${c[2]}</span></li>`).join('');
+    list.addEventListener('click', e => {
+      const b = e.target.closest('[data-t]'); if (!b) return;
+      promoVideo.currentTime = Number(b.dataset.t);
+      const pr = promoVideo.play(); if (pr && pr.catch) pr.catch(() => {});
+      promoVideo.scrollIntoView({ behavior: motionOff() ? 'auto' : 'smooth', block: 'center' });
+    });
+  })();
 
   /* ---------- init ---------- */
   applyPrefs(); renderCategoryUI();
