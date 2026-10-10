@@ -10,15 +10,26 @@
 </head>
 <body class="theme-default">
 
+    <div class="promo-strip">
+        <div class="container promo-strip-inner">
+            <span>Free delivery over $50</span>
+            <span>Flash deals every day</span>
+            <span>Secure checkout</span>
+        </div>
+    </div>
+
     <!-- Accessibility Floating Control Bar -->
     <header class="accessibility-bar">
         <div class="container bar-content">
             <span class="brand-tag">Smart Shopping. Better Living.</span>
-            <div class="accessibility-controls">
-                <button id="toggle-contrast" aria-label="Toggle High Contrast Mode">High Contrast</button>
-                <button id="font-decrease" aria-label="Decrease Font Size">A-</button>
-                <button id="font-reset" aria-label="Reset Font Size">A</button>
-                <button id="font-increase" aria-label="Increase Font Size">A+</button>
+            <div class="bar-actions">
+                <button id="login-btn" class="top-login-btn" aria-label="Login or create an account">Login / Sign up</button>
+                <div class="accessibility-controls">
+                    <button id="toggle-contrast" aria-label="Toggle High Contrast Mode">High Contrast</button>
+                    <button id="font-decrease" aria-label="Decrease Font Size">A-</button>
+                    <button id="font-reset" aria-label="Reset Font Size">A</button>
+                    <button id="font-increase" aria-label="Increase Font Size">A+</button>
+                </div>
             </div>
         </div>
     </header>
@@ -26,10 +37,17 @@
     <!-- Main Navigation Bar -->
     <nav class="main-nav">
         <div class="container nav-container">
-            <h1 class="logo">Aura<span>Mart</span></h1>
+            <div class="brand-wrap">
+                <h1 class="logo">Aura<span>Mart</span></h1>
+                <div class="mini-links">
+                    <span>Electronics</span>
+                    <span>Clothing</span>
+                    <span>Food</span>
+                </div>
+            </div>
             <div class="nav-actions">
                 <div class="search-box">
-                    <input type="text" id="search-input" placeholder="Search 10 items...">
+                    <input type="text" id="search-input" placeholder="Search 10 products...">
                 </div>
                 <button id="cart-btn" class="cart-btn" aria-label="Open Shopping Basket">
                     🛒 Basket <span id="cart-badge" class="badge">0</span>
@@ -41,31 +59,174 @@
     <!-- Hero Showcase Section -->
     <header class="hero">
         <div class="container hero-content animate-fade-in">
-            <h2>Refined Living, Universal Access</h2>
-            <p>Explore our curated collection of exactly 10 premium products across 3 distinct categories, built with universal design standards.</p>
+            <div class="hero-badge">New Season Collection</div>
+            <h2>Smart essentials for everyday living</h2>
+            <p>Shop carefully curated essentials across electronics, fashion and gourmet food — designed to feel premium, accessible and easy to explore.</p>
+            <div class="hero-actions">
+                <button class="btn primary-btn">Shop now</button>
+                <button class="btn secondary-btn">Explore deals</button>
+            </div>
+            <div class="hero-stats">
+                <div><strong>10K+</strong><span>happy shoppers</span></div>
+                <div><strong>4.9/5</strong><span>average rating</span></div>
+                <div><strong>24h</strong><span>dispatch</span></div>
+            </div>
         </div>
     </header>
+
+    <section class="benefits container">
+        <div class="benefit-card">
+            <span>🚚</span>
+            <div>
+                <h4>Fast shipping</h4>
+                <p>Quick delivery across the country.</p>
+            </div>
+        </div>
+        <div class="benefit-card">
+            <span>🛡️</span>
+            <div>
+                <h4>Secure checkout</h4>
+                <p>Protected payments and trusted service.</p>
+            </div>
+        </div>
+        <div class="benefit-card">
+            <span>💬</span>
+            <div>
+                <h4>Customer support</h4>
+                <p>Friendly help whenever you need it.</p>
+            </div>
+        </div>
+    </section>
 
     <!-- Main Content Area -->
     <main class="container main-layout">
         <!-- Category Filter Sidebar/Tabs -->
-        <section class="filters-section" aria-label="Product Categories">
+        <aside class="filters-section" aria-label="Product Categories">
             <h3>Categories</h3>
             <div class="category-tabs" id="category-tabs">
                 <button class="tab-btn active" data-category="all">All Products (10)</button>
-                <button class="tab-btn" data-category="Electronics">Electronics</button>
-                <button class="tab-btn" data-category="Clothing">Clothing</button>
-                <button class="tab-btn" data-category="Food">Food</button>
+                <button class="tab-btn" data-category="Electronics">Electronics (3)</button>
+                <button class="tab-btn" data-category="Clothing">Clothing (4)</button>
+                <button class="tab-btn" data-category="Food">Food (3)</button>
             </div>
-        </section>
+
+            <div class="filter-box">
+                <h4>Featured</h4>
+                <ul>
+                    <li>Top rated</li>
+                    <li>Flash deals</li>
+                    <li>Gift ideas</li>
+                </ul>
+            </div>
+        </aside>
 
         <!-- Product Grid -->
         <section class="products-section">
+            <div class="section-head">
+                <div>
+                    <p class="eyebrow">Fresh picks</p>
+                    <h3>Popular this week</h3>
+                </div>
+                <div class="sort-box">
+                    <label for="sort-select">Sort:</label>
+                    <select id="sort-select">
+                        <option>Best match</option>
+                        <option>Lowest price</option>
+                        <option>Highest price</option>
+                        <option>Top rated</option>
+                    </select>
+                </div>
+            </div>
             <div id="product-grid" class="product-grid">
                 <!-- Dynamically rendered via app.js -->
             </div>
         </section>
     </main>
+
+    <!-- Login / Account Modal -->
+    <div id="login-modal" class="modal-overlay hidden" aria-hidden="true">
+        <div class="modal-content animate-slide-up">
+            <div class="modal-header">
+                <h3 id="auth-title">Sign in to your account</h3>
+                <button id="close-login" class="close-btn" aria-label="Close Login">&times;</button>
+            </div>
+
+            <div id="auth-panel">
+                <section id="login-view" class="auth-view">
+                    <form id="login-form" class="auth-form">
+                        <div class="form-group">
+                            <label for="login-email">Email</label>
+                            <input type="email" id="login-email" required placeholder="user@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="login-password">Password</label>
+                            <input type="password" id="login-password" required placeholder="Enter your password">
+                        </div>
+                        <button type="submit" class="btn primary-btn full-width">Sign In</button>
+                    </form>
+                    <p class="auth-switch">New to AuraMart? <button type="button" id="show-signup">Create an account</button></p>
+                </section>
+
+                <section id="signup-view" class="auth-view" hidden>
+                    <form id="signup-form" class="auth-form">
+                        <div class="form-group">
+                            <label for="signup-name">Full Name</label>
+                            <input type="text" id="signup-name" required placeholder="Your full name">
+                        </div>
+                        <div class="form-group">
+                            <label for="signup-email">Email</label>
+                            <input type="email" id="signup-email" required placeholder="your@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label for="signup-password">Password</label>
+                            <input type="password" id="signup-password" required placeholder="Create a password">
+                        </div>
+                        <button type="submit" class="btn primary-btn full-width">Create Account</button>
+                    </form>
+                    <p class="auth-switch">Already have an account? <button type="button" id="show-login">Sign in</button></p>
+                </section>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Profile Account Panel -->
+    <div id="account-panel" class="account-panel hidden">
+        <div class="account-header">
+            <div>
+                <p class="eyebrow small">My account</p>
+                <h3 id="account-name">Customer</h3>
+            </div>
+            <button id="logout-btn" class="btn secondary-btn small-btn">Logout</button>
+        </div>
+
+        <div class="account-tabs">
+            <button class="account-tab active" data-tab="overview">Overview</button>
+            <button class="account-tab" data-tab="orders">Orders</button>
+            <button class="account-tab" data-tab="saved">Saved Items</button>
+        </div>
+
+        <div id="account-overview" class="account-content active">
+            <div class="account-card">
+                <h4>Profile</h4>
+                <p><strong>Email:</strong> <span id="account-email">-</span></p>
+                <p><strong>Member since:</strong> <span id="account-date">-</span></p>
+            </div>
+            <div class="account-card">
+                <h4>Shopping summary</h4>
+                <p><strong>Saved items:</strong> <span id="saved-count">0</span></p>
+                <p><strong>Orders placed:</strong> <span id="orders-count">0</span></p>
+                <p><strong>Total spend:</strong> <span id="total-spend">$0.00</span></p>
+            </div>
+        </div>
+
+        <div id="account-orders" class="account-content">
+            <ul id="orders-list" class="account-list"></ul>
+        </div>
+
+        <div id="account-saved" class="account-content">
+            <ul id="saved-list" class="account-list"></ul>
+        </div>
+    </div>
 
     <!-- Shopping Basket Slide-out Drawer / Modal -->
     <div id="cart-modal" class="modal-overlay hidden" aria-hidden="true">
