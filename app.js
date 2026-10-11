@@ -8,7 +8,7 @@
     get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* storage full or blocked */ } }
   };
-  const KEYS = { cart: 'sw_cart', wish: 'sw_wishlist', orders: 'sw_orders', stock: 'sw_stock', prefs: 'sw_prefs', promo: 'sw_promo', news: 'sw_newsletter' };
+  const KEYS = { cart: 'sw_cart', wish: 'sw_wishlist', orders: 'sw_orders', stock: 'sw_stock', prefs: 'sw_prefs', promo: 'sw_promo', news: 'sw_newsletter', users: 'sw_users', session: 'sw_session', lock: 'sw_lock' };
   const money = n => 'Rs. ' + Math.round(n).toLocaleString('en-US');
   const motionOff = () => document.documentElement.classList.contains('no-motion') || matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -38,17 +38,31 @@
   /* ---------- state (persisted) ---------- */
   let stock = store.get(KEYS.stock, null);
   if (!stock) { stock = {}; PRODUCTS.forEach(p => stock[p.id] = p.stock); store.set(KEYS.stock, stock); }
-  let cart = store.get(KEYS.cart, {});
-  let wish = store.get(KEYS.wish, []);
-  let orders = store.get(KEYS.orders, []);
-  let promo = store.get(KEYS.promo, null);
+  /* signed-in shoppers get their own basket, wishlist and orders; guests keep using the plain keys */
+  const readSession = () => {
+    let s = null;
+    try { s = JSON.parse(localStorage.getItem(KEYS.session) || sessionStorage.getItem(KEYS.session) || 'null'); } catch (e) { s = null; }
+    return s && store.get(KEYS.users, []).some(u => u.id === s.uid) ? s : null;
+  };
+  let session = readSession();
+  const ukey = n => KEYS[n] + (session ? '_' + session.uid : '');
+  let cart = store.get(ukey('cart'), {});
+  let wish = store.get(ukey('wish'), []);
+  let orders = store.get(ukey('orders'), []);
+  let promo = store.get(ukey('promo'), null);
   let prefs = store.get(KEYS.prefs, { theme: 'light', size: 100, motion: false });
   const filters = { cat: 'all', q: '', sort: 'featured', max: 25000, inStock: false };
   const getStock = id => stock[id] ?? 0;
-  const save = () => { store.set(KEYS.cart, cart); store.set(KEYS.wish, wish); store.set(KEYS.stock, stock); store.set(KEYS.orders, orders); store.set(KEYS.promo, promo); };
+  const save = () => { store.set(ukey('cart'), cart); store.set(ukey('wish'), wish); store.set(KEYS.stock, stock); store.set(ukey('orders'), orders); store.set(ukey('promo'), promo); };
 
   /* clean cart of invalid ids / over-stock */
-  Object.keys(cart).forEach(id => { if (!byId(id) || getStock(id) < 1) delete cart[id]; else cart[id] = Math.min(cart[id], getStock(id)); });
+  function sanitizeCart() { Object.keys(cart).forEach(id => { if (!byId(id) || getStock(id) < 1) delete cart[id]; else cart[id] = Math.min(cart[id], getStock(id)); }); }
+  sanitizeCart();
+  function loadScope() {
+    cart = store.get(ukey('cart'), {}); wish = store.get(ukey('wish'), []);
+    orders = store.get(ukey('orders'), []); promo = store.get(ukey('promo'), null);
+    sanitizeCart();
+  }
 
   /* ---------- feedback: toast, live region ---------- */
   function announce(msg) { const l = $('#live'); l.textContent = ''; setTimeout(() => l.textContent = msg, 50); }
@@ -295,6 +309,7 @@
 
   /* ---------- basket ---------- */
   function addToCart(id, qty = 1, srcEl) {
+    if (!currentUser()) { requireLogin(() => { addToCart(id, qty); refreshProductModal(); }); return; }
     const p = byId(id), have = cart[id] || 0, s = getStock(id);
     if (s < 1) { toast(p.name + ' is out of stock', 'error'); return; }
     if (have + qty > s) { toast(`Only ${s} of ${p.name} available`, 'error'); return; }
@@ -303,6 +318,7 @@
     toast(`${p.name} added to basket`); announce(`${p.name} added. Basket has ${cartCount()} items.`);
   }
   function setQty(id, q) {
+    if (!currentUser()) { requireLogin(() => setQty(id, q), 'Please sign in to change your basket.'); return; }
     if (q < 1) return removeFromCart(id);
     if (q > getStock(id)) { toast(`Only ${getStock(id)} available`, 'error'); return; }
     cart[id] = q; save(); updateCounts(); renderCart();
@@ -345,7 +361,9 @@
     const ids = Object.keys(cart), box = $('#cartItems'), t = totals();
     $('#cartFoot').hidden = ids.length === 0; $('#shipProgress').hidden = ids.length === 0;
     if (!ids.length) {
-      box.innerHTML = '<div class="empty-cart"><div class="big" aria-hidden="true">🛒</div><h3>Your basket is empty</h3><p class="muted">Add something you love and it will show up here.</p><button class="btn btn-primary" data-close>Start shopping</button></div>';
+      box.innerHTML = currentUser()
+        ? '<div class="empty-cart"><div class="big" aria-hidden="true">🛒</div><h3>Your basket is empty</h3><p class="muted">Add something you love and it will show up here.</p><button class="btn btn-primary" data-close>Start shopping</button></div>'
+        : '<div class="empty-cart"><div class="big" aria-hidden="true">🔒</div><h3>Sign in to start your basket</h3><p class="muted">Create a free account or sign in to add items to your basket.</p><button class="btn btn-primary" data-signin>Sign in or create account</button></div>';
       return;
     }
     box.innerHTML = ids.map(id => { const p = byId(id), q = cart[id]; return `<div class="line" data-id="${id}">
@@ -379,7 +397,14 @@
   });
   $('#clearCartBtn').onclick = () => { if (confirm('Remove all items from your basket?')) { cart = {}; promo = null; $('#promoInput').value = ''; $('#promoMsg').textContent = ''; save(); updateCounts(); renderCart(); refreshProductModal(); announce('Basket emptied'); } };
   $('#cartBtn').onclick = () => { renderCart(); openModal('cartOverlay'); };
-  $('#checkoutBtn').onclick = () => { if (!cartCount()) return; closeModal('cartOverlay'); setTimeout(startCheckout, 320); };
+  $('#checkoutBtn').onclick = () => {
+    if (!cartCount()) return;
+    closeModal('cartOverlay');
+    setTimeout(() => {
+      if (currentUser()) startCheckout();
+      else openAuth('login', { reason: 'Please sign in to check out.', next: startCheckout });
+    }, 320);
+  };
 
   /* ---------- checkout ---------- */
   const validators = {
@@ -401,18 +426,21 @@
     cvv: v => /^\d{3,4}$/.test(v.trim()) || 'Enter the 3 or 4 digit security code.'
   };
   function luhn(num) { let s = 0, alt = false; for (let i = num.length - 1; i >= 0; i--) { let n = +num[i]; if (alt) { n *= 2; if (n > 9) n -= 9; } s += n; alt = !alt; } return s % 10 === 0; }
+  const pendingBlur = {};
+  const deferCheck = id => { clearTimeout(pendingBlur[id]); pendingBlur[id] = setTimeout(() => check(id), 200); };
   function check(id) {
     const el = $('#' + id), res = validators[id](el.value), err = $('#err-' + id);
     if (res === true) { err.textContent = ''; el.removeAttribute('aria-invalid'); return true; }
     err.textContent = res; el.setAttribute('aria-invalid', 'true'); return false;
   }
   function checkAll(ids) {
+    ids.forEach(id => clearTimeout(pendingBlur[id]));
     let firstBad = null;
     ids.forEach(id => { if (!check(id) && !firstBad) firstBad = id; });
     if (firstBad) { $('#' + firstBad).focus(); announce('Please fix the highlighted fields.'); }
     return !firstBad;
   }
-  Object.keys(validators).forEach(id => { const el = $('#' + id); el.addEventListener('blur', () => { if (el.value) check(id); }); el.addEventListener('input', () => { if (el.getAttribute('aria-invalid')) check(id); }); });
+  Object.keys(validators).forEach(id => { const el = $('#' + id); el.addEventListener('blur', () => { if (el.value) deferCheck(id); }); el.addEventListener('input', () => { if (el.getAttribute('aria-invalid')) check(id); }); });
   $('#cardNumber').addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 19).replace(/(.{4})/g, '$1 ').trim(); });
   $('#expiry').addEventListener('input', e => { let v = e.target.value.replace(/\D/g, '').slice(0, 4); if (v.length > 2) v = v.slice(0, 2) + '/' + v.slice(2); e.target.value = v; });
   $('#cvv').addEventListener('input', e => { e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4); });
@@ -436,7 +464,7 @@
   }
   function startCheckout() {
     if (!cartCount()) return;
-    renderSummary(); showStep(1); openModal('checkoutOverlay', '#fullName');
+    renderSummary(); showStep(1); prefillCheckout(); openModal('checkoutOverlay', '#fullName');
   }
   const payMethod = () => $('input[name=pay]:checked').value;
   function renderReview() {
@@ -465,7 +493,7 @@
         if (cart[id] > getStock(id)) { toast(`${byId(id).name} no longer has enough stock. Please update your basket.`, 'error'); btn.disabled = false; btn.textContent = 'Place order'; closeModal('checkoutOverlay'); cart[id] = Math.max(0, getStock(id)); if (!cart[id]) delete cart[id]; save(); updateCounts(); renderCart(); return; }
       }
       const t = totals();
-      const order = { id: 'SW-' + Date.now().toString(36).toUpperCase(), date: new Date().toISOString(), items: Object.keys(cart).map(id => ({ id: +id, name: byId(id).name, qty: cart[id], price: byId(id).price })), total: t.total, promo, pay: payMethod(), name: $('#fullName').value.trim(), city: $('#city').value.trim() };
+      const order = { id: 'SW-' + Date.now().toString(36).toUpperCase(), date: new Date().toISOString(), items: Object.keys(cart).map(id => ({ id: +id, name: byId(id).name, qty: cart[id], price: byId(id).price })), total: t.total, promo, uid: session ? session.uid : null, pay: payMethod(), name: $('#fullName').value.trim(), city: $('#city').value.trim() };
       Object.keys(cart).forEach(id => stock[id] = getStock(id) - cart[id]);
       orders.unshift(order); cart = {}; promo = null; save(); updateCounts(); renderCart(); renderProducts();
       $('#orderNo').textContent = order.id;
@@ -494,6 +522,7 @@
       orders.map(o => `<article class="orders-card"><header><span>${o.id}</span><span>${money(o.total)}</span></header>
         <p class="muted small">${new Date(o.date).toLocaleString()} · ${o.pay === 'card' ? 'Card' : 'Cash on delivery'}${o.promo ? ' · Code ' + o.promo : ''}</p>
         <ul>${o.items.map(i => `<li>${i.name} × ${i.qty}</li>`).join('')}</ul></article>`).join('');
+    $('#ordersHint').hidden = !!session;
     openModal('ordersOverlay');
   }
   $('#ordersBtn').onclick = showOrders; $('#footOrders').onclick = showOrders;
@@ -532,16 +561,316 @@
   const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }), { threshold: .12 }) : null;
   $$('.reveal').forEach(el => io ? io.observe(el) : el.classList.add('in'));
   $('#resetDemo').onclick = () => {
-    if (!confirm('Reset demo data? This clears your basket, wishlist, orders and restores stock.')) return;
-    Object.values(KEYS).forEach(k => { try { localStorage.removeItem(k); } catch (e) { /* ignore */ } });
+    if (!confirm('Reset demo data? This clears accounts, baskets, wishlists and orders, and restores stock.')) return;
+    try { Object.keys(localStorage).filter(k => k.startsWith('sw_')).forEach(k => localStorage.removeItem(k)); sessionStorage.removeItem(KEYS.session); } catch (e) { /* ignore */ }
     location.reload();
   };
+
+  /* ---------- user accounts (front-end demo: everything is kept in this browser's localStorage) ---------- */
+  const enc = new TextEncoder();
+  const toHex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
+  const fromHex = hx => Uint8Array.from(hx.match(/.{2}/g).map(x => parseInt(x, 16)));
+  const hasCrypto = !!(window.crypto && crypto.subtle);
+  const randHex = n => { const a = new Uint8Array(n); if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(a); else a.forEach((_, i) => a[i] = Math.floor(Math.random() * 256)); return toHex(a); };
+  /* passwords are never stored: only a salted PBKDF2 hash (a simple fallback hash is used where the browser has no Web Crypto) */
+  async function hashPw(pw, salt, alg) {
+    alg = alg || (hasCrypto ? 'p1' : 'w1');
+    if (alg === 'p1' && hasCrypto) {
+      const key = await crypto.subtle.importKey('raw', enc.encode(pw), 'PBKDF2', false, ['deriveBits']);
+      const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt: fromHex(salt), iterations: 100000, hash: 'SHA-256' }, key, 256);
+      return 'p1:' + toHex(bits);
+    }
+    let hv = 5381; const s = salt + pw;
+    for (let i = 0; i < s.length; i++) hv = ((hv << 5) + hv) ^ s.charCodeAt(i);
+    return 'w1:' + (hv >>> 0).toString(16);
+  }
+  const getUsers = () => store.get(KEYS.users, []);
+  const setUsers = u => store.set(KEYS.users, u);
+  const findUser = email => getUsers().find(u => u.email === String(email).trim().toLowerCase());
+  const currentUser = () => session ? (getUsers().find(u => u.id === session.uid) || null) : null;
+  const firstName = u => u.name.trim().split(/\s+/)[0];
+
+  /* ---- validation rules (they plug into the same checker the checkout uses) ---- */
+  const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+  const pwRule = v => (v.length >= 8 && /[A-Za-z]/.test(v) && /\d/.test(v)) || 'Use at least 8 characters, including a letter and a number.';
+  Object.assign(validators, {
+    loginEmail: v => EMAIL_RE.test(v.trim()) || 'Enter the email you registered with.',
+    loginPassword: v => v.length > 0 || 'Enter your password.',
+    regName: validators.fullName,
+    regEmail: v => !EMAIL_RE.test(v.trim()) ? 'Enter a valid email, for example name@example.com.' : (findUser(v) ? 'An account with this email already exists. Try signing in instead.' : true),
+    regPassword: pwRule,
+    regConfirm: v => v === $('#regPassword').value || 'The passwords do not match.',
+    resetEmail: v => EMAIL_RE.test(v.trim()) || 'Enter the email for your account.',
+    resetPassword: pwRule,
+    resetConfirm: v => v === $('#resetPassword').value || 'The passwords do not match.',
+    accName: validators.fullName,
+    accPhone: v => !v.trim() || validators.phone(v),
+    accAddress: v => !v.trim() || validators.address(v),
+    accCity: v => !v.trim() || validators.city(v),
+    accPostal: v => !v.trim() || validators.postal(v),
+    curPass: v => v.length > 0 || 'Enter your current password.',
+    newPass: pwRule,
+    newPass2: v => v === $('#newPass').value || 'The passwords do not match.'
+  });
+  Object.keys(validators).filter(id => /^(login|reg|reset|acc|curPass|newPass)/.test(id)).forEach(id => {
+    const el = $('#' + id);
+    el.addEventListener('blur', () => { if (el.value) deferCheck(id); });
+    el.addEventListener('input', () => { if (el.getAttribute('aria-invalid')) check(id); });
+  });
+  function strength(pw) {
+    if (!pw) return 0;
+    let s = 0;
+    if (pw.length >= 8) s++; if (pw.length >= 12) s++;
+    if (/[a-z]/.test(pw) && /[A-Z]/.test(pw)) s++;
+    if (/\d/.test(pw)) s++; if (/[^A-Za-z0-9]/.test(pw)) s++;
+    return Math.min(4, Math.max(1, pw.length < 8 ? Math.min(s, 1) : s - 1));
+  }
+  function updateStrength(pw) {
+    const lv = strength(pw), names = ['', 'Weak', 'Fair', 'Good', 'Strong'], bar = $('#pwBar');
+    bar.style.width = lv * 25 + '%'; bar.dataset.lv = lv;
+    $('#pwStrength').textContent = lv ? 'Password strength: ' + names[lv] : 'Use 8+ characters with a letter and a number.';
+  }
+  $('#regPassword').addEventListener('input', e => { updateStrength(e.target.value); if ($('#regConfirm').getAttribute('aria-invalid')) check('regConfirm'); });
+  $('#newPass').addEventListener('input', () => { if ($('#newPass2').getAttribute('aria-invalid')) check('newPass2'); });
+  $('#resetPassword').addEventListener('input', () => { if ($('#resetConfirm').getAttribute('aria-invalid')) check('resetConfirm'); });
+  document.addEventListener('click', e => {
+    const b = e.target.closest('.pw-toggle'); if (!b) return;
+    const inp = $('#' + b.dataset.pw), show = inp.type === 'password';
+    inp.type = show ? 'text' : 'password'; b.textContent = show ? 'Hide' : 'Show';
+    b.setAttribute('aria-pressed', show); b.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+  });
+
+  /* ---- the sign in / create account dialog ---- */
+  let afterAuth = null;
+  const PANELS = {
+    login: ['loginForm', 'tabLogin', 'Welcome back', 'Sign in to see your basket, wishlist and saved details.'],
+    register: ['registerForm', 'tabRegister', 'Create your account', 'It takes under a minute. No payment details needed.'],
+    reset: ['resetForm', null, 'Reset your password', 'Demo only: a real store would email you a reset link.']
+  };
+  function showAuthPanel(name) {
+    Object.entries(PANELS).forEach(([k, [form, tab]]) => {
+      $('#' + form).hidden = k !== name;
+      if (tab) { const t = $('#' + tab); t.setAttribute('aria-selected', k === name); t.tabIndex = k === name ? 0 : -1; }
+    });
+    $('.tabs', $('#authOverlay')).hidden = name === 'reset';
+    $('#authTitle').textContent = PANELS[name][2]; $('#authSub').textContent = PANELS[name][3];
+    $$('#authOverlay .error, #authOverlay .form-error').forEach(p => p.textContent = '');
+    $$('#authOverlay input[aria-invalid]').forEach(i => i.removeAttribute('aria-invalid'));
+  }
+  function openAuth(tab, opts) {
+    opts = opts || {};
+    afterAuth = opts.next || null;
+    $('#authReason').hidden = !opts.reason; $('#authReason').textContent = opts.reason || '';
+    showAuthPanel(tab || 'login');
+    openModal('authOverlay', tab === 'register' ? '#regName' : '#loginEmail');
+  }
+  /* shoppers must be signed in to use the basket; the action they attempted is finished automatically after sign in */
+  function requireLogin(next, reason) {
+    openAuth('login', { reason: reason || 'Please sign in to add items to your basket. It only takes a moment.', next });
+  }
+  $('#cartItems').addEventListener('click', e => {
+    if (!e.target.closest('[data-signin]')) return;
+    closeModal('cartOverlay');
+    setTimeout(() => openAuth('login', { reason: 'Please sign in to use your basket.' }), 320);
+  });
+  function finishAuth() {
+    closeModal('authOverlay');
+    const fn = afterAuth; afterAuth = null;
+    if (fn) setTimeout(fn, 350);
+  }
+  $('#tabLogin').onclick = () => showAuthPanel('login');
+  $('#tabRegister').onclick = () => showAuthPanel('register');
+  $('.tabs').addEventListener('keydown', e => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const next = $('#tabLogin').getAttribute('aria-selected') === 'true' ? 'register' : 'login';
+    showAuthPanel(next); $(next === 'login' ? '#tabLogin' : '#tabRegister').focus();
+  });
+  $('#forgotBtn').onclick = () => { const em = $('#loginEmail').value; showAuthPanel('reset'); $('#resetEmail').value = em; $('#resetEmail').focus(); };
+  $('#backToLogin').onclick = () => { showAuthPanel('login'); $('#loginEmail').focus(); };
+  $('#demoFill').onclick = () => { $('#loginEmail').value = 'demo@shopwave.lk'; $('#loginPassword').value = 'Demo@1234'; $$('#loginForm [aria-invalid]').forEach(i => i.removeAttribute('aria-invalid')); $$('#loginForm .error').forEach(p => p.textContent = ''); $('#loginSubmit').focus(); };
+  $('#ordersSignIn').onclick = () => { closeModal('ordersOverlay'); setTimeout(() => openAuth('login'), 320); };
+
+  /* ---- sign in / out and merging the guest basket ---- */
+  function mergeGuestData() {
+    const gCart = store.get(KEYS.cart, {}), gWish = store.get(KEYS.wish, []), gPromo = store.get(KEYS.promo, null);
+    let moved = 0;
+    Object.keys(gCart).forEach(id => {
+      if (!byId(id)) return;
+      const add = Math.min(gCart[id], Math.max(getStock(id) - (cart[id] || 0), 0));
+      if (add > 0) { cart[id] = (cart[id] || 0) + add; moved += add; }
+    });
+    gWish.forEach(id => { if (byId(id) && !wish.includes(id)) wish.push(id); });
+    if (!promo && gPromo) promo = gPromo;
+    ['cart', 'wish', 'promo'].forEach(n => { try { localStorage.removeItem(KEYS[n]); } catch (e) { /* ignore */ } });
+    return moved;
+  }
+  function refreshAll() { updateCounts(); renderCart(); renderProducts(); renderWishlist(); renderAuthUI(); refreshProductModal(); }
+  function signIn(u, remember, msg) {
+    session = { uid: u.id, remember: !!remember };
+    try { localStorage.removeItem(KEYS.session); sessionStorage.removeItem(KEYS.session); (remember ? localStorage : sessionStorage).setItem(KEYS.session, JSON.stringify(session)); } catch (e) { /* session lasts until the page closes */ }
+    loadScope();
+    const moved = mergeGuestData();
+    save(); refreshAll();
+    toast(msg + (moved ? ' Your basket items were added to your account.' : ''));
+    announce(msg);
+    finishAuth();
+  }
+  function endSession() {
+    session = null;
+    try { localStorage.removeItem(KEYS.session); sessionStorage.removeItem(KEYS.session); } catch (e) { /* ignore */ }
+    loadScope(); refreshAll();
+  }
+  function signOut() { save(); endSession(); toast('You have signed out. See you soon!'); announce('Signed out'); }
+  function deleteAccount() {
+    const u = currentUser(); if (!u) return;
+    ['cart', 'wish', 'orders', 'promo'].forEach(n => { try { localStorage.removeItem(KEYS[n] + '_' + u.id); } catch (e) { /* ignore */ } });
+    setUsers(getUsers().filter(x => x.id !== u.id));
+    endSession(); closeModal('accountOverlay'); toast('Your account has been deleted.'); announce('Account deleted');
+  }
+
+  /* ---- login with a short lock after repeated wrong passwords ---- */
+  const LOCK_AFTER = 5, LOCK_MS = 30000;
+  const getLock = email => (store.get(KEYS.lock, {})[email]) || { n: 0, until: 0 };
+  const setLock = (email, l) => { const all = store.get(KEYS.lock, {}); if (l) all[email] = l; else delete all[email]; store.set(KEYS.lock, all); };
+  let lockTimer;
+  function lockCountdown(btn, until) {
+    clearInterval(lockTimer);
+    const tick = () => {
+      const s = Math.ceil((until - Date.now()) / 1000);
+      if (s <= 0) { clearInterval(lockTimer); btn.disabled = false; btn.textContent = 'Sign in'; $('#loginErr').textContent = ''; return; }
+      btn.disabled = true; btn.textContent = 'Try again in ' + s + 's';
+    };
+    tick(); lockTimer = setInterval(tick, 500);
+  }
+  $('#loginForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    const err = $('#loginErr'), btn = $('#loginSubmit'); err.textContent = '';
+    if (!checkAll(['loginEmail', 'loginPassword'])) return;
+    const email = $('#loginEmail').value.trim().toLowerCase(), pw = $('#loginPassword').value, remember = $('#remember').checked;
+    const lk = getLock(email);
+    if (lk.until > Date.now()) { err.textContent = 'Too many failed attempts. For your security, please wait before trying again.'; lockCountdown(btn, lk.until); return; }
+    btn.disabled = true; btn.textContent = 'Signing in…';
+    const u = findUser(email);
+    const ok = u ? (await hashPw(pw, u.salt, u.hash.split(':')[0])) === u.hash : (await hashPw(pw, '00'), false);
+    if (ok) {
+      setLock(email, null); btn.disabled = false; btn.textContent = 'Sign in';
+      $('#loginForm').reset();
+      signIn(u, remember, 'Welcome back, ' + firstName(u) + '!');
+      return;
+    }
+    const n = lk.n + 1;
+    if (n >= LOCK_AFTER) {
+      const until = Date.now() + LOCK_MS; setLock(email, { n: 0, until });
+      err.textContent = 'Too many failed attempts. For your security, please wait 30 seconds before trying again.';
+      lockCountdown(btn, until);
+    } else {
+      setLock(email, { n, until: 0 });
+      const left = LOCK_AFTER - n;
+      err.textContent = 'Incorrect email or password. ' + left + ' attempt' + (left === 1 ? '' : 's') + ' left before a short lock.';
+      btn.disabled = false; btn.textContent = 'Sign in';
+    }
+    $('#loginPassword').value = ''; $('#loginPassword').focus();
+  });
+
+  /* ---- create account ---- */
+  $('#registerForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!checkAll(['regName', 'regEmail', 'regPassword', 'regConfirm'])) return;
+    const terms = $('#regTerms'), terr = $('#err-regTerms');
+    if (!terms.checked) { terr.textContent = 'Please accept the terms to create your account.'; terms.setAttribute('aria-invalid', 'true'); terms.focus(); return; }
+    terr.textContent = ''; terms.removeAttribute('aria-invalid');
+    const btn = $('#regSubmit'); btn.disabled = true; btn.textContent = 'Creating account…';
+    const salt = randHex(16), hash = await hashPw($('#regPassword').value, salt);
+    const u = { id: 'u' + Date.now().toString(36) + randHex(2), name: $('#regName').value.trim().replace(/\s+/g, ' '), email: $('#regEmail').value.trim().toLowerCase(), salt, hash, created: new Date().toISOString(), phone: '', address: '', city: '', postal: '' };
+    const users = getUsers(); users.push(u); setUsers(users);
+    btn.disabled = false; btn.textContent = 'Create account';
+    $('#registerForm').reset(); updateStrength('');
+    signIn(u, true, 'Welcome to ShopWave, ' + firstName(u) + '! Your account is ready.');
+  });
+
+  /* ---- reset password (demo: no email is sent, so the reset happens straight away) ---- */
+  $('#resetForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!checkAll(['resetEmail', 'resetPassword', 'resetConfirm'])) return;
+    const email = $('#resetEmail').value.trim().toLowerCase(), users = getUsers(), u = users.find(x => x.email === email);
+    if (u) { u.salt = randHex(16); u.hash = await hashPw($('#resetPassword').value, u.salt); setUsers(users); setLock(email, null); }
+    $('#resetForm').reset();
+    showAuthPanel('login'); $('#loginEmail').value = email; $('#loginPassword').focus();
+    toast('If an account exists for that email, its password has been reset. You can sign in now.');
+  });
+
+  /* ---- header button and account menu ---- */
+  const authBtn = $('#authBtn'), userMenu = $('#userMenu');
+  function setMenu(open) { userMenu.hidden = !open; authBtn.setAttribute('aria-expanded', open); }
+  authBtn.onclick = () => { if (!currentUser()) { openAuth('login'); return; } setMenu(userMenu.hidden); };
+  document.addEventListener('click', e => { if (!userMenu.hidden && !e.target.closest('.user-wrap')) setMenu(false); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && !userMenu.hidden) { setMenu(false); authBtn.focus(); } });
+  $('#menuAccount').onclick = () => { setMenu(false); openAccount(); };
+  $('#menuOrders').onclick = () => { setMenu(false); showOrders(); };
+  $('#menuSignOut').onclick = () => { setMenu(false); signOut(); };
+  function renderAuthUI() {
+    const u = currentUser(), ic = $('#authIcon');
+    $('#authLabel').textContent = u ? firstName(u) : 'Sign in';
+    ic.textContent = u ? u.name.trim()[0].toUpperCase() : '👤'; ic.classList.toggle('avatar', !!u);
+    authBtn.setAttribute('aria-label', u ? 'Account menu for ' + u.name : 'Sign in or create an account');
+    authBtn.setAttribute('aria-haspopup', u ? 'true' : 'dialog');
+    $('#menuName').textContent = u ? u.name : ''; $('#menuEmail').textContent = u ? u.email : '';
+    if (!u) setMenu(false);
+  }
+
+  /* ---- my account ---- */
+  function openAccount() {
+    const u = currentUser(); if (!u) { openAuth('login'); return; }
+    $('#accName').value = u.name; $('#accEmail').value = u.email;
+    $('#accPhone').value = u.phone || ''; $('#accAddress').value = u.address || ''; $('#accCity').value = u.city || ''; $('#accPostal').value = u.postal || '';
+    $('#passForm').reset();
+    $$('#accountOverlay .error').forEach(p => p.textContent = ''); $$('#accountOverlay input[aria-invalid]').forEach(i => i.removeAttribute('aria-invalid'));
+    $('#accMeta').textContent = 'Member since ' + new Date(u.created).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) + ' · ' + orders.length + ' order' + (orders.length === 1 ? '' : 's');
+    openModal('accountOverlay', '#accName');
+  }
+  $('#profileForm').addEventListener('submit', e => {
+    e.preventDefault();
+    if (!checkAll(['accName', 'accPhone', 'accAddress', 'accCity', 'accPostal'])) return;
+    const users = getUsers(), u = users.find(x => session && x.id === session.uid); if (!u) return;
+    u.name = $('#accName').value.trim().replace(/\s+/g, ' '); u.phone = $('#accPhone').value.trim();
+    u.address = $('#accAddress').value.trim(); u.city = $('#accCity').value.trim(); u.postal = $('#accPostal').value.trim();
+    setUsers(users); renderAuthUI(); toast('Your details were saved.'); announce('Profile saved');
+  });
+  $('#passForm').addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!checkAll(['curPass', 'newPass', 'newPass2'])) return;
+    const users = getUsers(), u = users.find(x => session && x.id === session.uid); if (!u) return;
+    if ((await hashPw($('#curPass').value, u.salt, u.hash.split(':')[0])) !== u.hash) {
+      $('#err-curPass').textContent = 'That is not your current password.'; $('#curPass').setAttribute('aria-invalid', 'true'); $('#curPass').focus(); return;
+    }
+    u.salt = randHex(16); u.hash = await hashPw($('#newPass').value, u.salt); setUsers(users);
+    $('#passForm').reset(); toast('Your password was updated.'); announce('Password updated');
+  });
+  $('#deleteAcc').onclick = () => { if (confirm('Delete your account? Your details, basket, wishlist and orders will be removed from this browser. This cannot be undone.')) deleteAccount(); };
+
+  /* checkout is filled in from the account's saved details */
+  function prefillCheckout() {
+    const u = currentUser(); if (!u) return;
+    Object.entries({ fullName: u.name, email: u.email, phone: u.phone, address: u.address, city: u.city, postal: u.postal, cardName: u.name }).forEach(([id, v]) => { const el = $('#' + id); if (v && !el.value) el.value = v; });
+  }
+
+  /* a ready-made demo account so markers can try the login straight away */
+  async function seedDemoUser() {
+    if (store.get('sw_seeded', false)) return;
+    const salt = randHex(16), hash = await hashPw('Demo@1234', salt), users = getUsers();
+    if (!users.some(u => u.email === 'demo@shopwave.lk')) {
+      users.push({ id: 'u_demo', name: 'Demo Shopper', email: 'demo@shopwave.lk', salt, hash, created: new Date().toISOString(), phone: '+94 77 123 4567', address: '25 Galle Road', city: 'Colombo', postal: '00300' });
+      setUsers(users);
+    }
+    store.set('sw_seeded', true);
+  }
 
   /* ---------- real media: animated images + videos ---------- */
   const canHover = matchMedia('(hover: hover)').matches;
   const heroVideo = $('#heroVideo');
   let heroVisible = true;
-  PRODUCTS.forEach(p => { p.img = `images/product-${p.id}.webp`; p.still = `images/product-${p.id}-still.jpg`; });
+  PRODUCTS.forEach(p => { p.img = `product-${p.id}.webp`; p.still = `product-${p.id}-still.jpg`; });
 
   /* cards show a light still image, and play the animation on hover or focus (touch screens play it straight away) */
   function mediaTag(p) {
@@ -623,5 +952,5 @@
   applyPrefs(); renderCategoryUI();
   $('#grid').innerHTML = Array.from({ length: 6 }, () => '<div class="skeleton" aria-hidden="true"></div>').join('');
   setTimeout(renderProducts, 450);
-  updateCounts(); renderCart(); startAuto();
+  updateCounts(); renderCart(); startAuto(); renderAuthUI(); seedDemoUser();
 })();
