@@ -238,7 +238,7 @@
     clearTimeout(sTimer);
     sTimer = setTimeout(() => { filters.q = sInput.value; renderProducts(); showSuggestions(); }, 180);
   });
-  sInput.addEventListener('keydown', e => {
+  sInput.addEventListener('keydown', e => {  
     const items = $$('li[data-id]', sList);
     if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
       if (!items.length) return; e.preventDefault();
