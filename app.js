@@ -97,6 +97,7 @@
   let promo = store.get(ukey('promo'), null);
   let prefs = store.get(KEYS.prefs, { theme: 'light', size: 100, motion: false });
   const filters = { cat: 'all', q: '', sort: 'featured', max: 25000, inStock: false };
+  const getStock = id => stock[id] ?? 0;
   const save = () => {
     store.set(ukey('cart'), cart); store.set(ukey('wish'), wish); store.set(KEYS.stock, stock); store.set(ukey('orders'), orders); store.set(ukey('promo'), promo);
     if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady() && session) {
