@@ -62,11 +62,34 @@ a{color:var(--primary)}
 .header-row{display:flex;align-items:center;gap:1.25rem;padding:.75rem 0}
 
 /* logo */
-.logo{display:flex;align-items:center;gap:.75rem;text-decoration:none;color:var(--text);white-space:nowrap;user-select:none}
-.logo-mark{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#4f46e5 0%,#7c3aed 100%);color:#ffffff;box-shadow:0 4px 14px rgba(79,70,229,.35);transition:transform .4s var(--ease),box-shadow .4s var(--ease)}
-.logo:hover .logo-mark{transform:translateY(-2px) rotate(-6deg) scale(1.06);box-shadow:0 8px 22px rgba(79,70,229,.45)}
+.logo{display:inline-flex;align-items:center;text-decoration:none;user-select:none;transition:transform .25s var(--ease)}
+.logo:hover{transform:translateY(-1px)}
+.site-logo-img{
+  height:52px;
+  width:auto;
+  max-width:180px;
+  object-fit:contain;
+  display:block;
+  filter:drop-shadow(0 2px 5px rgba(15,23,42,0.22)) drop-shadow(0 0 1px rgba(15,23,42,0.35));
+  transition:transform .3s var(--ease),filter .3s var(--ease);
+}
+.logo:hover .site-logo-img{
+  transform:scale(1.04);
+  filter:drop-shadow(0 4px 14px rgba(251,146,60,0.5));
+}
+[data-theme="dark"] .site-logo-img{
+  filter:drop-shadow(0 4px 14px rgba(251,146,60,0.35));
+}
+[data-theme="dark"] .logo:hover .site-logo-img{
+  filter:drop-shadow(0 6px 20px rgba(251,146,60,0.6));
+}
+[data-theme="contrast"] .site-logo-img{
+  filter:drop-shadow(0 0 3px #fff);
+}
+.logo-mark{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#ff8e02 0%,#ff5722 100%);color:#ffffff;box-shadow:0 4px 14px rgba(255,110,2,.35);transition:transform .4s var(--ease),box-shadow .4s var(--ease)}
+.logo:hover .logo-mark{transform:translateY(-2px) rotate(-6deg) scale(1.06);box-shadow:0 8px 22px rgba(255,110,2,.45)}
 .logo-name{font-size:1.45rem;font-weight:800;letter-spacing:-.03em;display:inline-flex;align-items:baseline}
-.logo-name b{background:linear-gradient(135deg,var(--primary) 0%,#8b5cf6 50%,#ec4899 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo-name b{background:linear-gradient(135deg,#ff8e02 0%,#f59e0b 50%,#ff5722 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
 [data-theme="contrast"] .logo-name b{-webkit-text-fill-color:var(--primary)}
 .logo-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);margin-left:2px;display:inline-block}
 
@@ -255,6 +278,14 @@ input[type=checkbox],input[type=radio]{width:20px;height:20px;accent-color:var(-
 .foot-grid{display:grid;grid-template-columns:1.5fr 1fr 1fr 1.35fr;gap:2.5rem;align-items:start}
 .foot-col{display:flex;flex-direction:column}
 .foot-brand-col .foot-logo{margin-bottom:.85rem;display:inline-flex}
+.foot-logo-img{
+  height:68px;
+  max-width:210px;
+  filter:drop-shadow(0 3px 8px rgba(15,23,42,0.18));
+}
+[data-theme="dark"] .foot-logo-img{
+  filter:drop-shadow(0 4px 14px rgba(251,146,60,0.32));
+}
 .foot-desc{color:var(--muted);font-size:.9rem;line-height:1.6;margin-bottom:1.1rem;max-width:320px}
 
 /* Store Status Badge */
@@ -482,6 +513,8 @@ html.no-motion .reveal{opacity:1;transform:none}
   .promo-msg{font-size:.78rem}
   .promo-badge{display:none}
   .logo-name{font-size:1.25rem}
+  .site-logo-img{height:42px}
+  .foot-logo-img{height:54px}
   .header-actions{gap:.25rem}
   .hbtn{padding:.48rem .65rem}
   .slides{min-height:480px}
