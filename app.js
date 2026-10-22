@@ -97,8 +97,13 @@
   let promo = store.get(ukey('promo'), null);
   let prefs = store.get(KEYS.prefs, { theme: 'light', size: 100, motion: false });
   const filters = { cat: 'all', q: '', sort: 'featured', max: 25000, inStock: false };
-  const getStock = id => stock[id] ?? 0;
-  const save = () => { store.set(ukey('cart'), cart); store.set(ukey('wish'), wish); store.set(KEYS.stock, stock); store.set(ukey('orders'), orders); store.set(ukey('promo'), promo); };
+  const save = () => {
+    store.set(ukey('cart'), cart); store.set(ukey('wish'), wish); store.set(KEYS.stock, stock); store.set(ukey('orders'), orders); store.set(ukey('promo'), promo);
+    if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady() && session) {
+      window.ShopWaveFirebase.saveUserCart(session.uid, cart).catch(() => {});
+      window.ShopWaveFirebase.saveUserWishlist(session.uid, wish).catch(() => {});
+    }
+  };
 
   /* clean cart of invalid ids / over-stock */
   function sanitizeCart() { Object.keys(cart).forEach(id => { if (!byId(id) || getStock(id) < 1) delete cart[id]; else cart[id] = Math.min(cart[id], getStock(id)); }); }
@@ -344,7 +349,12 @@
   let pmId = null, pmQty = 1;
   function openProduct(id) {
     const p = byId(id); pmId = p.id; pmQty = 1;
-    const m = $('#pmMedia'); m.style.background = grad(p); m.innerHTML = `<img class="pm-img" src="${motionOff() ? p.still : p.img}" data-anim="${p.img}" data-still="${p.still}" data-emoji="${p.emoji}" alt="${p.name}" width="512" height="512" decoding="async">`; m.setAttribute('aria-label', 'Photo of ' + p.name);
+    const m = $('#pmMedia'); m.style.background = grad(p);
+    if (p.id <= 10) {
+      m.innerHTML = `<img class="pm-img" src="${motionOff() ? p.still : p.img}" data-anim="${p.img}" data-still="${p.still}" data-emoji="${p.emoji}" alt="${p.name}" width="512" height="512" decoding="async">`;
+    } else {
+      m.innerHTML = `<span class="p-emoji" style="font-size:7rem;filter:drop-shadow(0 15px 25px rgba(0,0,0,.25));animation:floaty 4s ease-in-out infinite" aria-hidden="true">${p.emoji}</span>`;
+    }
     $('#pmCat').textContent = catName(p.category);
     $('#pmName').textContent = p.name;
     $('#pmRating').innerHTML = `<div class="rating">${starsHtml(p)} <span>${p.rating} out of 5 · ${p.reviews} reviews</span></div>`;
@@ -559,11 +569,16 @@
         if (cart[id] > getStock(id)) { toast(`${byId(id).name} no longer has enough stock. Please update your basket.`, 'error'); btn.disabled = false; btn.textContent = 'Place order'; closeModal('checkoutOverlay'); cart[id] = Math.max(0, getStock(id)); if (!cart[id]) delete cart[id]; save(); updateCounts(); renderCart(); return; }
       }
       const t = totals();
-      const order = { id: 'SW-' + Date.now().toString(36).toUpperCase(), date: new Date().toISOString(), items: Object.keys(cart).map(id => ({ id: +id, name: byId(id).name, qty: cart[id], price: byId(id).price })), total: t.total, promo, uid: session ? session.uid : null, pay: payMethod(), name: $('#fullName').value.trim(), city: $('#city').value.trim() };
+      const order = { id: 'SW-' + Date.now().toString(36).toUpperCase(), date: new Date().toISOString(), items: Object.keys(cart).map(id => ({ id: +id, name: byId(id).name, qty: cart[id], price: byId(id).price })), total: t.total, promo, uid: session ? session.uid : null, pay: payMethod(), name: $('#fullName').value.trim(), email: $('#email').value.trim(), city: $('#city').value.trim(), address: $('#address').value.trim(), phone: $('#phone').value.trim() };
       Object.keys(cart).forEach(id => stock[id] = getStock(id) - cart[id]);
       orders.unshift(order); cart = {}; promo = null; save(); updateCounts(); renderCart(); renderProducts();
+      if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
+        window.ShopWaveFirebase.createOrder(order)
+          .then(() => toast('Order saved to Cloud Firestore!'))
+          .catch(err => console.warn('Could not save order to Firestore:', err));
+      }
       $('#orderNo').textContent = order.id;
-      $('#orderMsg').textContent = `A confirmation was sent to ${$('#email').value.trim()} (demo). Total paid: ${money(order.total)}.`;
+      $('#orderMsg').textContent = `A confirmation was sent to ${$('#email').value.trim()}. Total paid: ${money(order.total)}.`;
       btn.disabled = false; btn.textContent = 'Place order'; $('#terms').checked = false;
       $('#step1').reset(); $('#step2').reset(); $('#cardFields').hidden = false;
       showStep(4); confetti(); announce('Order placed successfully. Order number ' + order.id);
@@ -582,12 +597,23 @@
   }
 
   /* ---------- orders ---------- */
-  function showOrders() {
+  async function showOrders() {
+    if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady() && session) {
+      try {
+        const remoteOrders = await window.ShopWaveFirebase.getUserOrders(session.uid);
+        if (remoteOrders && remoteOrders.length) {
+          orders = remoteOrders;
+          store.set(ukey('orders'), orders);
+        }
+      } catch (err) {
+        console.warn('Could not fetch Firestore orders:', err);
+      }
+    }
     const box = $('#ordersList');
     box.innerHTML = !orders.length ? '<div class="empty-cart"><div class="big" aria-hidden="true">📦</div><p>You have not placed any orders yet.</p></div>' :
-      orders.map(o => `<article class="orders-card"><header><span>${o.id}</span><span>${money(o.total)}</span></header>
-        <p class="muted small">${new Date(o.date).toLocaleString()} · ${o.pay === 'card' ? 'Card' : 'Cash on delivery'}${o.promo ? ' · Code ' + o.promo : ''}</p>
-        <ul>${o.items.map(i => `<li>${i.name} × ${i.qty}</li>`).join('')}</ul></article>`).join('');
+      orders.map(o => `<article class="orders-card"><header><span>${o.id || o.orderId}</span><span>${money(o.total)}</span></header>
+        <p class="muted small">${new Date(o.date).toLocaleString()} · ${o.pay === 'card' ? 'Card' : 'Cash on delivery'}${o.promo ? ' · Code ' + o.promo : ''}${o.status ? ' · <span class="badge">' + o.status + '</span>' : ''}</p>
+        <ul>${(o.items || []).map(i => `<li>${i.name} × ${i.qty}</li>`).join('')}</ul></article>`).join('');
     $('#ordersHint').hidden = !!session;
     openModal('ordersOverlay');
   }
@@ -617,6 +643,9 @@
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) { err.textContent = 'Please enter a valid email address.'; $('#newsEmail').setAttribute('aria-invalid', 'true'); $('#newsEmail').focus(); return; }
     err.textContent = ''; $('#newsEmail').removeAttribute('aria-invalid');
     const list = store.get(KEYS.news, []); if (!list.includes(v)) list.push(v); store.set(KEYS.news, list);
+    if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
+      window.ShopWaveFirebase.saveNewsletter(v).catch(err => console.warn('Could not sync newsletter to Firestore:', err));
+    }
     $('#newsEmail').value = ''; toast('Subscribed! Check your inbox for WELCOME5.');
   });
 
@@ -736,6 +765,8 @@
     $('#authTitle').textContent = PANELS[name][2]; $('#authSub').textContent = PANELS[name][3];
     $$('#authOverlay .error, #authOverlay .form-error').forEach(p => p.textContent = '');
     $$('#authOverlay input[aria-invalid]').forEach(i => i.removeAttribute('aria-invalid'));
+    const modal = $('#authOverlay .modal');
+    if (modal) modal.scrollTop = 0;
   }
   function openAuth(tab, opts) {
     opts = opts || {};
@@ -779,7 +810,49 @@
   const demoFillBtn = $('#demoFill');
   if (demoFillBtn) demoFillBtn.onclick = fillDemoCredentials;
   const gBtn = $('#socialGoogle'), aBtn = $('#socialApple');
-  if (gBtn) gBtn.onclick = () => { fillDemoCredentials(); toast('Google account connected: demo credentials ready!'); };
+  if (gBtn) {
+    gBtn.onclick = async () => {
+      if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
+        try {
+          toast('Connecting with Google…');
+          const fbUser = await window.ShopWaveFirebase.signInWithGoogle();
+          const profile = await window.ShopWaveFirebase.getUserProfile(fbUser.uid);
+          const u = {
+            id: fbUser.uid,
+            name: (profile && profile.name) || fbUser.displayName || 'Google User',
+            email: (fbUser.email || '').toLowerCase(),
+            phone: (profile && profile.phone) || '',
+            address: (profile && profile.address) || '',
+            city: (profile && profile.city) || '',
+            postal: (profile && profile.postal) || '',
+            created: new Date().toISOString()
+          };
+          const users = getUsers();
+          const existingIdx = users.findIndex(x => x.id === u.id);
+          if (existingIdx > -1) users[existingIdx] = u; else users.push(u);
+          setUsers(users);
+
+          const remoteOrders = await window.ShopWaveFirebase.getUserOrders(u.id);
+          if (remoteOrders && remoteOrders.length) {
+            orders = remoteOrders;
+            store.set(KEYS.orders + '_' + u.id, orders);
+          }
+          if (profile && Array.isArray(profile.wishlist) && profile.wishlist.length) {
+            profile.wishlist.forEach(id => { if (byId(id) && !wish.includes(id)) wish.push(id); });
+            store.set(KEYS.wish + '_' + u.id, wish);
+          }
+
+          signIn(u, true, 'Signed in with Google as ' + u.name + '!');
+        } catch (err) {
+          console.error(err);
+          toast(err.message || 'Google sign-in was cancelled or failed.', 'error');
+        }
+      } else {
+        fillDemoCredentials();
+        toast('Google account demo loaded! (Configure firebase-config.js for live Google sign-in)');
+      }
+    };
+  }
   if (aBtn) aBtn.onclick = () => { fillDemoCredentials(); toast('Apple ID connected: demo credentials ready!'); };
   $('#ordersSignIn').onclick = () => { closeModal('ordersOverlay'); setTimeout(() => openAuth('login'), 320); };
 
@@ -840,6 +913,50 @@
     const err = $('#loginErr'), btn = $('#loginSubmit'); err.textContent = '';
     if (!checkAll(['loginEmail', 'loginPassword'])) { shakeModal('authOverlay'); return; }
     const email = $('#loginEmail').value.trim().toLowerCase(), pw = $('#loginPassword').value, remember = $('#remember').checked;
+
+    if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
+      btn.disabled = true; btn.textContent = 'Signing in…';
+      try {
+        const fbUser = await window.ShopWaveFirebase.signIn(email, pw);
+        const profile = await window.ShopWaveFirebase.getUserProfile(fbUser.uid);
+        const u = {
+          id: fbUser.uid,
+          name: (profile && profile.name) || fbUser.displayName || email.split('@')[0],
+          email: email,
+          phone: (profile && profile.phone) || '',
+          address: (profile && profile.address) || '',
+          city: (profile && profile.city) || '',
+          postal: (profile && profile.postal) || '',
+          created: (profile && profile.createdAt && profile.createdAt.toDate ? profile.createdAt.toDate().toISOString() : new Date().toISOString())
+        };
+        const users = getUsers();
+        const existingIdx = users.findIndex(x => x.id === u.id);
+        if (existingIdx > -1) users[existingIdx] = u; else users.push(u);
+        setUsers(users);
+
+        const remoteOrders = await window.ShopWaveFirebase.getUserOrders(u.id);
+        if (remoteOrders && remoteOrders.length) {
+          orders = remoteOrders;
+          store.set(KEYS.orders + '_' + u.id, orders);
+        }
+        if (profile && Array.isArray(profile.wishlist) && profile.wishlist.length) {
+          profile.wishlist.forEach(id => { if (byId(id) && !wish.includes(id)) wish.push(id); });
+          store.set(KEYS.wish + '_' + u.id, wish);
+        }
+
+        btn.disabled = false; btn.textContent = 'Sign in';
+        $('#loginForm').reset();
+        signIn(u, remember, 'Welcome back, ' + firstName(u) + '! (Cloud Firebase)');
+        return;
+      } catch (fbErr) {
+        btn.disabled = false; btn.textContent = 'Sign in';
+        err.textContent = fbErr.message || 'Incorrect email or password.';
+        shakeModal('authOverlay');
+        $('#loginPassword').value = ''; $('#loginPassword').focus();
+        return;
+      }
+    }
+
     const lk = getLock(email);
     if (lk.until > Date.now()) { err.textContent = 'Too many failed attempts. For your security, please wait before trying again.'; lockCountdown(btn, lk.until); shakeModal('authOverlay'); return; }
     btn.disabled = true; btn.textContent = 'Signing in…';
@@ -874,19 +991,66 @@
     if (!terms.checked) { terr.textContent = 'Please accept the terms to create your account.'; terms.setAttribute('aria-invalid', 'true'); terms.focus(); shakeModal('authOverlay'); return; }
     terr.textContent = ''; terms.removeAttribute('aria-invalid');
     const btn = $('#regSubmit'); btn.disabled = true; btn.textContent = 'Creating account…';
-    const salt = randHex(16), hash = await hashPw($('#regPassword').value, salt);
-    const u = { id: 'u' + Date.now().toString(36) + randHex(2), name: $('#regName').value.trim().replace(/\s+/g, ' '), email: $('#regEmail').value.trim().toLowerCase(), salt, hash, created: new Date().toISOString(), phone: '', address: '', city: '', postal: '' };
+    const nameVal = $('#regName').value.trim().replace(/\s+/g, ' ');
+    const emailVal = $('#regEmail').value.trim().toLowerCase();
+    const rawPw = $('#regPassword').value;
+
+    if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
+      try {
+        const fbUser = await window.ShopWaveFirebase.signUp(nameVal, emailVal, rawPw);
+        const u = {
+          id: fbUser.uid,
+          name: nameVal,
+          email: emailVal,
+          phone: '',
+          address: '',
+          city: '',
+          postal: '',
+          created: new Date().toISOString()
+        };
+        const users = getUsers();
+        if (!users.some(x => x.id === u.id)) { users.push(u); setUsers(users); }
+        btn.disabled = false; btn.textContent = 'Create account';
+        $('#registerForm').reset(); updateStrength('');
+        signIn(u, true, 'Welcome to ShopWave, ' + firstName(u) + '! (Saved to Cloud Firestore)');
+        return;
+      } catch (fbErr) {
+        btn.disabled = false; btn.textContent = 'Create account';
+        const terr = $('#err-regEmail');
+        terr.textContent = fbErr.message || 'Could not register account.';
+        shakeModal('authOverlay');
+        return;
+      }
+    }
+
+    const salt = randHex(16), hash = await hashPw(rawPw, salt);
+    const u = { id: 'u' + Date.now().toString(36) + randHex(2), name: nameVal, email: emailVal, salt, hash, created: new Date().toISOString(), phone: '', address: '', city: '', postal: '' };
     const users = getUsers(); users.push(u); setUsers(users);
     btn.disabled = false; btn.textContent = 'Create account';
     $('#registerForm').reset(); updateStrength('');
     signIn(u, true, 'Welcome to ShopWave, ' + firstName(u) + '! Your account is ready.');
   });
 
-  /* ---- reset password (demo: no email is sent, so the reset happens straight away) ---- */
+  /* ---- reset password ---- */
   $('#resetForm').addEventListener('submit', async e => {
     e.preventDefault();
     if (!checkAll(['resetEmail', 'resetPassword', 'resetConfirm'])) return;
-    const email = $('#resetEmail').value.trim().toLowerCase(), users = getUsers(), u = users.find(x => x.email === email);
+    const email = $('#resetEmail').value.trim().toLowerCase();
+
+    if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
+      try {
+        await window.ShopWaveFirebase.resetPassword(email);
+        $('#resetForm').reset();
+        showAuthPanel('login');
+        toast('Password reset link sent to ' + email + ' via Firebase!');
+        return;
+      } catch (fbErr) {
+        toast(fbErr.message || 'Could not send reset email.', 'error');
+        return;
+      }
+    }
+
+    const users = getUsers(), u = users.find(x => x.email === email);
     if (u) { u.salt = randHex(16); u.hash = await hashPw($('#resetPassword').value, u.salt); setUsers(users); setLock(email, null); }
     $('#resetForm').reset();
     showAuthPanel('login'); $('#loginEmail').value = email; $('#loginPassword').focus();
@@ -909,6 +1073,15 @@
     authBtn.setAttribute('aria-label', u ? 'Account menu for ' + u.name : 'Sign in or create an account');
     authBtn.setAttribute('aria-haspopup', u ? 'true' : 'dialog');
     $('#menuName').textContent = u ? u.name : ''; $('#menuEmail').textContent = u ? u.email : '';
+    const badgeText = $('#authBadgeText');
+    if (badgeText) {
+      if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
+        badgeText.textContent = 'Firebase Cloud DB Active';
+        badgeText.parentElement.style.borderColor = 'rgba(34,197,94,.4)';
+      } else {
+        badgeText.textContent = 'ShopWave Portal (Local Mode)';
+      }
+    }
     if (!u) setMenu(false);
   }
 
@@ -922,13 +1095,17 @@
     $('#accMeta').textContent = 'Member since ' + new Date(u.created).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' }) + ' · ' + orders.length + ' order' + (orders.length === 1 ? '' : 's');
     openModal('accountOverlay', '#accName');
   }
-  $('#profileForm').addEventListener('submit', e => {
+  $('#profileForm').addEventListener('submit', async e => {
     e.preventDefault();
     if (!checkAll(['accName', 'accPhone', 'accAddress', 'accCity', 'accPostal'])) return;
     const users = getUsers(), u = users.find(x => session && x.id === session.uid); if (!u) return;
     u.name = $('#accName').value.trim().replace(/\s+/g, ' '); u.phone = $('#accPhone').value.trim();
     u.address = $('#accAddress').value.trim(); u.city = $('#accCity').value.trim(); u.postal = $('#accPostal').value.trim();
-    setUsers(users); renderAuthUI(); toast('Your details were saved.'); announce('Profile saved');
+    setUsers(users); renderAuthUI();
+    if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
+      await window.ShopWaveFirebase.saveUserProfile(u.id, u).catch(err => console.warn('Could not sync profile to Firestore:', err));
+    }
+    toast('Your details were saved.'); announce('Profile saved');
   });
   $('#passForm').addEventListener('submit', async e => {
     e.preventDefault();
@@ -963,14 +1140,28 @@
   const canHover = matchMedia('(hover: hover)').matches;
   const heroVideo = $('#heroVideo');
   let heroVisible = true;
-  PRODUCTS.forEach(p => { p.img = `product-${p.id}-still.jpg`; p.still = p.img; });
+  PRODUCTS.forEach(p => {
+    if (p.id <= 10) {
+      p.img = `product-${p.id}-still.jpg`;
+      p.still = p.img;
+    } else {
+      p.img = null;
+      p.still = null;
+    }
+  });
 
   /* cards show a light still image, and play the animation on hover or focus (touch screens play it straight away) */
   function mediaTag(p) {
+    if (p.id > 10 || !p.still) {
+      return `<span class="p-emoji" aria-hidden="true">${p.emoji}</span>`;
+    }
     const src = (motionOff() || canHover) ? p.still : p.img;
     return `<img class="p-img" src="${src}" data-anim="${p.img}" data-still="${p.still}" data-emoji="${p.emoji}" alt="${p.name}" width="512" height="512" loading="lazy" decoding="async">`;
   }
   function thumbImg(p) {
+    if (p.id > 10 || !p.still) {
+      return `<span class="p-emoji small" aria-hidden="true">${p.emoji}</span>`;
+    }
     return `<img src="${p.still}" data-still="${p.still}" data-emoji="${p.emoji}" alt="" width="64" height="64" loading="lazy" decoding="async">`;
   }
   function swapCardMedia(card, play) {
