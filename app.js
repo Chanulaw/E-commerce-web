@@ -278,7 +278,7 @@
   let pmId = null, pmQty = 1;
   function openProduct(id) {
     const p = byId(id); pmId = p.id; pmQty = 1;
-    const m = $('#pmMedia'); m.style.background = grad(p); m.innerHTML = `<img class="pm-img" src="${motionOff() ? p.still : p.img}" data-anim="${p.img}" data-still="${p.still}" data-emoji="${p.emoji}" alt="" width="512" height="512" decoding="async">`; m.setAttribute('aria-label', 'Illustration of ' + p.name);
+    const m = $('#pmMedia'); m.style.background = grad(p); m.innerHTML = `<img class="pm-img" src="${motionOff() ? p.still : p.img}" data-anim="${p.img}" data-still="${p.still}" data-emoji="${p.emoji}" alt="${p.name}" width="512" height="512" decoding="async">`; m.setAttribute('aria-label', 'Photo of ' + p.name);
     $('#pmCat').textContent = catName(p.category);
     $('#pmName').textContent = p.name;
     $('#pmRating').innerHTML = `<div class="rating">${starsHtml(p)} <span>${p.rating} out of 5 · ${p.reviews} reviews</span></div>`;
@@ -866,16 +866,16 @@
     store.set('sw_seeded', true);
   }
 
-  /* ---------- real media: animated images + videos ---------- */
+  /* ---------- product photos + videos ---------- */
   const canHover = matchMedia('(hover: hover)').matches;
   const heroVideo = $('#heroVideo');
   let heroVisible = true;
-  PRODUCTS.forEach(p => { p.img = `product-${p.id}.webp`; p.still = `product-${p.id}-still.jpg`; });
+  PRODUCTS.forEach(p => { p.img = `product-${p.id}-still.jpg`; p.still = p.img; });
 
   /* cards show a light still image, and play the animation on hover or focus (touch screens play it straight away) */
   function mediaTag(p) {
     const src = (motionOff() || canHover) ? p.still : p.img;
-    return `<img class="p-img" src="${src}" data-anim="${p.img}" data-still="${p.still}" data-emoji="${p.emoji}" alt="" width="512" height="512" loading="lazy" decoding="async">`;
+    return `<img class="p-img" src="${src}" data-anim="${p.img}" data-still="${p.still}" data-emoji="${p.emoji}" alt="${p.name}" width="512" height="512" loading="lazy" decoding="async">`;
   }
   function thumbImg(p) {
     return `<img src="${p.still}" data-still="${p.still}" data-emoji="${p.emoji}" alt="" width="64" height="64" loading="lazy" decoding="async">`;
