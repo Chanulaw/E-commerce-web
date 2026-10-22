@@ -198,7 +198,7 @@
     const items = [{ id: 'all', name: 'All products', icon: '🛒' }, ...CATEGORIES];
     $('#catNav').innerHTML = items.map(c => `<button class="cat-link" data-cat="${c.id}" aria-current="${filters.cat === c.id}"><span aria-hidden="true">${c.icon}</span> ${c.name}</button>`).join('');
     $('#chipRow').innerHTML = items.map(c => `<button type="button" class="chip" data-cat="${c.id}" aria-pressed="${filters.cat === c.id}">${c.icon} ${c.name}</button>`).join('');
-    $('#footCats').innerHTML = CATEGORIES.map(c => `<li><button class="link-btn" data-cat="${c.id}">${c.name}</button></li>`).join('');
+    $('#footCats').innerHTML = CATEGORIES.map(c => `<li><button type="button" class="foot-link" data-cat="${c.id}"><span class="foot-cat-dot" aria-hidden="true"></span><span class="foot-link-text">${c.name}</span><svg class="foot-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"></polyline></svg></button></li>`).join('');
   }
   function setCategory(id, scroll) {
     filters.cat = id; renderCategoryUI(); renderProducts();
@@ -618,7 +618,10 @@
     $('#ordersHint').hidden = !!session;
     openModal('ordersOverlay');
   }
-  $('#ordersBtn').onclick = showOrders; $('#footOrders').onclick = showOrders;
+  $('#ordersBtn').onclick = showOrders;
+  if ($('#footOrders')) $('#footOrders').onclick = showOrders;
+  if ($('#footWish')) $('#footWish').onclick = () => { renderWishlist(); openModal('wishOverlay'); };
+  if ($('#footCart')) $('#footCart').onclick = () => { renderCart(); openModal('cartOverlay'); };
 
   /* ---------- hero carousel ---------- */
   const slides = $$('.slide'); let cur = 0, paused = false, timer;
