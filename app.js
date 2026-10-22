@@ -252,6 +252,27 @@
   document.addEventListener('click', e => { if (!e.target.closest('#searchForm')) hideSuggestions(); });
   $('#searchForm').addEventListener('submit', e => { e.preventDefault(); filters.q = sInput.value; renderProducts(); hideSuggestions(); $('#products').scrollIntoView({ behavior: motionOff() ? 'auto' : 'smooth' }); });
 
+  /* shortcut Ctrl+K / Cmd+K to focus search */
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      e.preventDefault();
+      sInput.focus();
+      sInput.select();
+    }
+  });
+
+  /* promo code copy */
+  const promoBtn = $('#promoCodeBtn');
+  if (promoBtn) {
+    promoBtn.addEventListener('click', () => {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText('SAVE10').then(() => toast('Code SAVE10 copied to clipboard!'));
+      } else {
+        toast('Use coupon: SAVE10');
+      }
+    });
+  }
+
   /* ---------- wishlist ---------- */
   function toggleWish(id) {
     const i = wish.indexOf(id);
