@@ -693,11 +693,30 @@
   $('#regPassword').addEventListener('input', e => { updateStrength(e.target.value); if ($('#regConfirm').getAttribute('aria-invalid')) check('regConfirm'); });
   $('#newPass').addEventListener('input', () => { if ($('#newPass2').getAttribute('aria-invalid')) check('newPass2'); });
   $('#resetPassword').addEventListener('input', () => { if ($('#resetConfirm').getAttribute('aria-invalid')) check('resetConfirm'); });
+  function shakeModal(id) {
+    const m = $('#' + id + ' .modal') || $('#' + id);
+    if (!m) return;
+    m.classList.remove('shake');
+    void m.offsetWidth;
+    m.classList.add('shake');
+  }
+
   document.addEventListener('click', e => {
     const b = e.target.closest('.pw-toggle'); if (!b) return;
     const inp = $('#' + b.dataset.pw), show = inp.type === 'password';
-    inp.type = show ? 'text' : 'password'; b.textContent = show ? 'Hide' : 'Show';
-    b.setAttribute('aria-pressed', show); b.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    inp.type = show ? 'text' : 'password';
+    b.setAttribute('aria-pressed', show);
+    b.setAttribute('aria-label', show ? 'Hide password' : 'Show password');
+    const eye = b.querySelector('.eye-icon');
+    if (eye) {
+      eye.innerHTML = show
+        ? '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><line x1="2" y1="2" x2="22" y2="22"/></svg>'
+        : '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>';
+      const txt = b.querySelector('.pw-toggle-text');
+      if (txt) txt.textContent = show ? 'Hide' : 'Show';
+    } else {
+      b.textContent = show ? 'Hide' : 'Show';
+    }
   });
 
   /* ---- the sign in / create account dialog ---- */
@@ -713,6 +732,7 @@
       if (tab) { const t = $('#' + tab); t.setAttribute('aria-selected', k === name); t.tabIndex = k === name ? 0 : -1; }
     });
     $('.tabs', $('#authOverlay')).hidden = name === 'reset';
+    const banner = $('#demoBanner'); if (banner) banner.hidden = name !== 'login';
     $('#authTitle').textContent = PANELS[name][2]; $('#authSub').textContent = PANELS[name][3];
     $$('#authOverlay .error, #authOverlay .form-error').forEach(p => p.textContent = '');
     $$('#authOverlay input[aria-invalid]').forEach(i => i.removeAttribute('aria-invalid'));
@@ -748,7 +768,19 @@
   });
   $('#forgotBtn').onclick = () => { const em = $('#loginEmail').value; showAuthPanel('reset'); $('#resetEmail').value = em; $('#resetEmail').focus(); };
   $('#backToLogin').onclick = () => { showAuthPanel('login'); $('#loginEmail').focus(); };
-  $('#demoFill').onclick = () => { $('#loginEmail').value = 'demo@shopwave.lk'; $('#loginPassword').value = 'Demo@1234'; $$('#loginForm [aria-invalid]').forEach(i => i.removeAttribute('aria-invalid')); $$('#loginForm .error').forEach(p => p.textContent = ''); $('#loginSubmit').focus(); };
+  function fillDemoCredentials() {
+    $('#loginEmail').value = 'demo@shopwave.lk';
+    $('#loginPassword').value = 'Demo@1234';
+    $$('#loginForm [aria-invalid]').forEach(i => i.removeAttribute('aria-invalid'));
+    $$('#loginForm .error').forEach(p => p.textContent = '');
+    toast('Demo account loaded: click Sign in to proceed!');
+    $('#loginSubmit').focus();
+  }
+  const demoFillBtn = $('#demoFill');
+  if (demoFillBtn) demoFillBtn.onclick = fillDemoCredentials;
+  const gBtn = $('#socialGoogle'), aBtn = $('#socialApple');
+  if (gBtn) gBtn.onclick = () => { fillDemoCredentials(); toast('Google account connected: demo credentials ready!'); };
+  if (aBtn) aBtn.onclick = () => { fillDemoCredentials(); toast('Apple ID connected: demo credentials ready!'); };
   $('#ordersSignIn').onclick = () => { closeModal('ordersOverlay'); setTimeout(() => openAuth('login'), 320); };
 
   /* ---- sign in / out and merging the guest basket ---- */
@@ -806,10 +838,10 @@
   $('#loginForm').addEventListener('submit', async e => {
     e.preventDefault();
     const err = $('#loginErr'), btn = $('#loginSubmit'); err.textContent = '';
-    if (!checkAll(['loginEmail', 'loginPassword'])) return;
+    if (!checkAll(['loginEmail', 'loginPassword'])) { shakeModal('authOverlay'); return; }
     const email = $('#loginEmail').value.trim().toLowerCase(), pw = $('#loginPassword').value, remember = $('#remember').checked;
     const lk = getLock(email);
-    if (lk.until > Date.now()) { err.textContent = 'Too many failed attempts. For your security, please wait before trying again.'; lockCountdown(btn, lk.until); return; }
+    if (lk.until > Date.now()) { err.textContent = 'Too many failed attempts. For your security, please wait before trying again.'; lockCountdown(btn, lk.until); shakeModal('authOverlay'); return; }
     btn.disabled = true; btn.textContent = 'Signing in…';
     const u = findUser(email);
     const ok = u ? (await hashPw(pw, u.salt, u.hash.split(':')[0])) === u.hash : (await hashPw(pw, '00'), false);
@@ -830,15 +862,16 @@
       err.textContent = 'Incorrect email or password. ' + left + ' attempt' + (left === 1 ? '' : 's') + ' left before a short lock.';
       btn.disabled = false; btn.textContent = 'Sign in';
     }
+    shakeModal('authOverlay');
     $('#loginPassword').value = ''; $('#loginPassword').focus();
   });
 
   /* ---- create account ---- */
   $('#registerForm').addEventListener('submit', async e => {
     e.preventDefault();
-    if (!checkAll(['regName', 'regEmail', 'regPassword', 'regConfirm'])) return;
+    if (!checkAll(['regName', 'regEmail', 'regPassword', 'regConfirm'])) { shakeModal('authOverlay'); return; }
     const terms = $('#regTerms'), terr = $('#err-regTerms');
-    if (!terms.checked) { terr.textContent = 'Please accept the terms to create your account.'; terms.setAttribute('aria-invalid', 'true'); terms.focus(); return; }
+    if (!terms.checked) { terr.textContent = 'Please accept the terms to create your account.'; terms.setAttribute('aria-invalid', 'true'); terms.focus(); shakeModal('authOverlay'); return; }
     terr.textContent = ''; terms.removeAttribute('aria-invalid');
     const btn = $('#regSubmit'); btn.disabled = true; btn.textContent = 'Creating account…';
     const salt = randHex(16), hash = await hashPw($('#regPassword').value, salt);

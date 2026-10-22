@@ -452,66 +452,251 @@
 <!-- SIGN IN / CREATE ACCOUNT -->
 <div class="overlay" id="authOverlay" hidden>
   <div class="modal modal-auth" role="dialog" aria-modal="true" aria-labelledby="authTitle" tabindex="-1">
-    <button class="icon-btn modal-close" data-close aria-label="Close sign in">✕</button>
-    <div class="auth-brand" aria-hidden="true">🛍️</div>
-    <h2 id="authTitle">Welcome back</h2>
-    <p class="muted" id="authSub">Sign in to see your basket, wishlist and saved details.</p>
-    <p class="auth-note" id="authReason" hidden></p>
+    <div class="auth-card-glow" aria-hidden="true"></div>
+    <button class="icon-btn modal-close auth-close" data-close aria-label="Close sign in">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
 
-    <div class="tabs" role="tablist" aria-label="Account options">
-      <button type="button" role="tab" id="tabLogin" aria-selected="true" aria-controls="loginForm">Sign in</button>
-      <button type="button" role="tab" id="tabRegister" aria-selected="false" aria-controls="registerForm" tabindex="-1">Create account</button>
+    <div class="auth-header">
+      <div class="auth-badge-pill">
+        <span class="auth-badge-pulse" aria-hidden="true"></span>
+        <span>ShopWave Secure Portal</span>
+      </div>
+      <div class="auth-brand-badge" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"></path>
+          <path d="M3 6h18"></path>
+          <path d="M16 10a4 4 0 0 1-8 0"></path>
+        </svg>
+      </div>
+      <h2 id="authTitle" class="auth-title">Welcome back</h2>
+      <p class="muted auth-subtitle" id="authSub">Sign in to see your basket, wishlist and saved details.</p>
+      <div class="auth-note" id="authReason" hidden></div>
+    </div>
+
+    <div class="tabs auth-tabs" role="tablist" aria-label="Account options">
+      <button type="button" role="tab" id="tabLogin" aria-selected="true" aria-controls="loginForm">
+        <svg class="tab-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+        <span>Sign in</span>
+      </button>
+      <button type="button" role="tab" id="tabRegister" aria-selected="false" aria-controls="registerForm" tabindex="-1">
+        <svg class="tab-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+        <span>Create account</span>
+      </button>
+    </div>
+
+    <!-- QUICK DEMO FILL CARD -->
+    <div class="demo-acc-banner" id="demoBanner" role="region" aria-label="Demo login helper">
+      <div class="demo-acc-left">
+        <span class="demo-badge-tag">⚡ Demo User</span>
+        <div class="demo-acc-meta">
+          <strong>demo@shopwave.lk</strong>
+          <span>Pass: <code>Demo@1234</code></span>
+        </div>
+      </div>
+      <button type="button" class="demo-quick-btn" id="demoFill" title="Auto-fill demo credentials">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m13 2-2 2.5h3L11 11l7-1-6 12 2-7.5H11l3-6.5z"/></svg>
+        <span>Auto Fill</span>
+      </button>
     </div>
 
     <!-- LOGIN -->
     <form class="auth-form" id="loginForm" role="tabpanel" aria-labelledby="tabLogin" novalidate>
-      <div class="field"><label for="loginEmail">Email</label>
-        <input id="loginEmail" type="email" autocomplete="email" aria-describedby="err-loginEmail"><p class="error" id="err-loginEmail"></p></div>
-      <div class="field"><label for="loginPassword">Password</label>
-        <div class="pw-wrap"><input id="loginPassword" type="password" autocomplete="current-password" aria-describedby="err-loginPassword">
-          <button type="button" class="pw-toggle" data-pw="loginPassword" aria-label="Show password" aria-pressed="false">Show</button></div>
-        <p class="error" id="err-loginPassword"></p></div>
-      <p class="form-error" id="loginErr" role="alert"></p>
-      <div class="row-between">
-        <label class="check-row"><input type="checkbox" id="remember"> Keep me signed in</label>
-        <button type="button" class="link-btn" id="forgotBtn">Forgot password?</button>
+      <div class="field">
+        <label for="loginEmail">Email address</label>
+        <div class="input-with-icon">
+          <span class="input-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          </span>
+          <input id="loginEmail" type="email" autocomplete="email" placeholder="you@example.com" aria-describedby="err-loginEmail">
+        </div>
+        <p class="error" id="err-loginEmail"></p>
       </div>
-      <button type="submit" class="btn btn-primary btn-block btn-lg" id="loginSubmit">Sign in</button>
-      <button type="button" class="btn btn-ghost btn-block" id="demoFill">Fill in the demo account</button>
+
+      <div class="field">
+        <div class="label-row">
+          <label for="loginPassword">Password</label>
+          <button type="button" class="link-btn small" id="forgotBtn">Forgot password?</button>
+        </div>
+        <div class="input-with-icon pw-wrap">
+          <span class="input-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </span>
+          <input id="loginPassword" type="password" autocomplete="current-password" placeholder="••••••••" aria-describedby="err-loginPassword">
+          <button type="button" class="pw-toggle" data-pw="loginPassword" aria-label="Show password" aria-pressed="false">
+            <span class="eye-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </span>
+            <span class="pw-toggle-text sr-only">Show</span>
+          </button>
+        </div>
+        <p class="error" id="err-loginPassword"></p>
+      </div>
+
+      <p class="form-error" id="loginErr" role="alert"></p>
+
+      <div class="row-between auth-check-row">
+        <label class="custom-check-row">
+          <input type="checkbox" id="remember">
+          <span class="check-label">Keep me signed in</span>
+        </label>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg auth-submit-btn" id="loginSubmit">
+        <span>Sign in</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+      </button>
+
+      <div class="auth-divider">
+        <span>or continue with</span>
+      </div>
+
+      <div class="social-login-grid">
+        <button type="button" class="btn btn-ghost social-btn" id="socialGoogle" aria-label="Sign in with Google">
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+          <span>Google</span>
+        </button>
+        <button type="button" class="btn btn-ghost social-btn" id="socialApple" aria-label="Sign in with Apple">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.84c.66-.82 1.11-1.96.99-3.1-.96.04-2.13.65-2.81 1.45-.6.69-1.12 1.83-1 2.95 1.07.08 2.16-.54 2.82-1.3z"/></svg>
+          <span>Apple</span>
+        </button>
+      </div>
     </form>
 
     <!-- REGISTER -->
     <form class="auth-form" id="registerForm" role="tabpanel" aria-labelledby="tabRegister" hidden novalidate>
-      <div class="field"><label for="regName">Full name <span class="req">*</span></label>
-        <input id="regName" autocomplete="name" aria-describedby="err-regName"><p class="error" id="err-regName"></p></div>
-      <div class="field"><label for="regEmail">Email <span class="req">*</span></label>
-        <input id="regEmail" type="email" autocomplete="email" aria-describedby="err-regEmail"><p class="error" id="err-regEmail"></p></div>
-      <div class="field"><label for="regPassword">Password <span class="req">*</span></label>
-        <div class="pw-wrap"><input id="regPassword" type="password" autocomplete="new-password" aria-describedby="pwStrength err-regPassword">
-          <button type="button" class="pw-toggle" data-pw="regPassword" aria-label="Show password" aria-pressed="false">Show</button></div>
-        <div class="meter" aria-hidden="true"><i id="pwBar" data-lv="0"></i></div>
-        <p class="hint-sm" id="pwStrength" aria-live="polite">Use 8+ characters with a letter and a number.</p>
-        <p class="error" id="err-regPassword"></p></div>
-      <div class="field"><label for="regConfirm">Confirm password <span class="req">*</span></label>
-        <input id="regConfirm" type="password" autocomplete="new-password" aria-describedby="err-regConfirm"><p class="error" id="err-regConfirm"></p></div>
-      <div><label class="check-row"><input type="checkbox" id="regTerms" aria-describedby="err-regTerms"> I agree to the terms and privacy policy.</label>
-        <p class="error" id="err-regTerms"></p></div>
-      <button type="submit" class="btn btn-primary btn-block btn-lg" id="regSubmit">Create account</button>
+      <div class="field">
+        <label for="regName">Full name <span class="req">*</span></label>
+        <div class="input-with-icon">
+          <span class="input-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          </span>
+          <input id="regName" autocomplete="name" placeholder="Kamal Perera" aria-describedby="err-regName">
+        </div>
+        <p class="error" id="err-regName"></p>
+      </div>
+
+      <div class="field">
+        <label for="regEmail">Email address <span class="req">*</span></label>
+        <div class="input-with-icon">
+          <span class="input-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          </span>
+          <input id="regEmail" type="email" autocomplete="email" placeholder="kamal@example.com" aria-describedby="err-regEmail">
+        </div>
+        <p class="error" id="err-regEmail"></p>
+      </div>
+
+      <div class="field">
+        <label for="regPassword">Create password <span class="req">*</span></label>
+        <div class="input-with-icon pw-wrap">
+          <span class="input-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </span>
+          <input id="regPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" aria-describedby="pwStrength err-regPassword">
+          <button type="button" class="pw-toggle" data-pw="regPassword" aria-label="Show password" aria-pressed="false">
+            <span class="eye-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </span>
+            <span class="pw-toggle-text sr-only">Show</span>
+          </button>
+        </div>
+        <div class="meter modern-meter" aria-hidden="true">
+          <div class="meter-track">
+            <i id="pwBar" data-lv="0"></i>
+          </div>
+        </div>
+        <p class="hint-sm auth-strength-hint" id="pwStrength" aria-live="polite">Use 8+ characters with a letter and a number.</p>
+        <p class="error" id="err-regPassword"></p>
+      </div>
+
+      <div class="field">
+        <label for="regConfirm">Confirm password <span class="req">*</span></label>
+        <div class="input-with-icon pw-wrap">
+          <span class="input-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+          </span>
+          <input id="regConfirm" type="password" autocomplete="new-password" placeholder="Repeat your password" aria-describedby="err-regConfirm">
+        </div>
+        <p class="error" id="err-regConfirm"></p>
+      </div>
+
+      <div>
+        <label class="custom-check-row">
+          <input type="checkbox" id="regTerms" aria-describedby="err-regTerms">
+          <span class="check-label">I agree to the <a href="#privacy" class="link-inline">Terms of Service</a> & <a href="#privacy" class="link-inline">Privacy Policy</a>.</span>
+        </label>
+        <p class="error" id="err-regTerms"></p>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg auth-submit-btn" id="regSubmit">
+        <span>Create My Free Account</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+      </button>
     </form>
 
     <!-- RESET PASSWORD -->
     <form class="auth-form" id="resetForm" hidden novalidate>
-      <div class="field"><label for="resetEmail">Account email</label>
-        <input id="resetEmail" type="email" autocomplete="email" aria-describedby="err-resetEmail"><p class="error" id="err-resetEmail"></p></div>
-      <div class="field"><label for="resetPassword">New password</label>
-        <div class="pw-wrap"><input id="resetPassword" type="password" autocomplete="new-password" aria-describedby="err-resetPassword">
-          <button type="button" class="pw-toggle" data-pw="resetPassword" aria-label="Show password" aria-pressed="false">Show</button></div>
-        <p class="error" id="err-resetPassword"></p></div>
-      <div class="field"><label for="resetConfirm">Confirm new password</label>
-        <input id="resetConfirm" type="password" autocomplete="new-password" aria-describedby="err-resetConfirm"><p class="error" id="err-resetConfirm"></p></div>
-      <button type="submit" class="btn btn-primary btn-block btn-lg">Reset password</button>
-      <button type="button" class="btn btn-ghost btn-block" id="backToLogin">Back to sign in</button>
+      <div class="field">
+        <label for="resetEmail">Account email</label>
+        <div class="input-with-icon">
+          <span class="input-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+          </span>
+          <input id="resetEmail" type="email" autocomplete="email" placeholder="you@example.com" aria-describedby="err-resetEmail">
+        </div>
+        <p class="error" id="err-resetEmail"></p>
+      </div>
+
+      <div class="field">
+        <label for="resetPassword">New password</label>
+        <div class="input-with-icon pw-wrap">
+          <span class="input-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          </span>
+          <input id="resetPassword" type="password" autocomplete="new-password" placeholder="At least 8 characters" aria-describedby="err-resetPassword">
+          <button type="button" class="pw-toggle" data-pw="resetPassword" aria-label="Show password" aria-pressed="false">
+            <span class="eye-icon" aria-hidden="true">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </span>
+            <span class="pw-toggle-text sr-only">Show</span>
+          </button>
+        </div>
+        <p class="error" id="err-resetPassword"></p>
+      </div>
+
+      <div class="field">
+        <label for="resetConfirm">Confirm new password</label>
+        <div class="input-with-icon pw-wrap">
+          <span class="input-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 12 2 2 4-4"/><circle cx="12" cy="12" r="10"/></svg>
+          </span>
+          <input id="resetConfirm" type="password" autocomplete="new-password" placeholder="Repeat new password" aria-describedby="err-resetConfirm">
+        </div>
+        <p class="error" id="err-resetConfirm"></p>
+      </div>
+
+      <button type="submit" class="btn btn-primary btn-block btn-lg auth-submit-btn">Reset password</button>
+      <button type="button" class="btn btn-ghost btn-block auth-back-btn" id="backToLogin">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        <span>Back to sign in</span>
+      </button>
     </form>
+
+    <div class="auth-trust-footer">
+      <div class="auth-trust-item">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        <span>256-Bit SSL Encrypted</span>
+      </div>
+      <span class="auth-trust-dot">•</span>
+      <div class="auth-trust-item">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>
+        <span>Safe &amp; Private</span>
+      </div>
+    </div>
 
   </div>
 </div>
