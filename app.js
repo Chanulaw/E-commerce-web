@@ -30,6 +30,15 @@
     { id: 9, name: 'Virgin Coconut Oil 500ml', category: 'food', price: 1950, was: 2300, stock: 30, rating: 4.5, reviews: 318, emoji: '🥥', c: ['#92400e', '#fbbf24'], desc: 'Cold-pressed virgin coconut oil for cooking, hair and skin.', features: ['Cold pressed', 'No additives', '500 ml glass bottle', 'Multi-purpose use'] },
     { id: 10, name: 'Dark Chocolate Collection', category: 'food', price: 1250, was: null, stock: 4, rating: 4.7, reviews: 129, emoji: '🍫', c: ['#7c2d12', '#be123c'], desc: 'Smooth 70% cocoa chocolate with notes of cinnamon, ginger and sea salt.', features: ['70% cocoa', '4 flavours', 'Ethically sourced cocoa', '200 g'] }
   ];
+  PRODUCTS.forEach(p => {
+    p.images = [
+      `product-${p.id}-still.jpg`,
+      `product-${p.id}-2.jpg`,
+      `product-${p.id}-3.jpg`
+    ];
+    p.img = p.images[0];
+    p.still = p.images[0];
+  });
   const catName = id => CATEGORIES.find(c => c.id === id).name;
   const byId = id => PRODUCTS.find(p => p.id === Number(id));
   const PROMOS = { SAVE10: { pct: 10, label: '10% off' }, WELCOME5: { pct: 5, label: '5% off' } };
@@ -182,11 +191,69 @@
     if (p.was) return `<span class="tag sale">-${Math.round((1 - p.price / p.was) * 100)}%</span>`;
     return '';
   }
+  const cardImgState = {};
+  const getCardImgIdx = id => cardImgState[id] || 0;
+  function setCardImgIdx(id, newIdx) {
+    const p = byId(id);
+    if (!p || !p.images || !p.images.length) return;
+    const len = p.images.length;
+    const nextIdx = (newIdx % len + len) % len;
+    cardImgState[id] = nextIdx;
+    const card = $(`.card[data-id="${id}"]`);
+    if (card) {
+      const imgs = card.querySelectorAll('.card-img-slider .p-img');
+      imgs.forEach((img, idx) => {
+        img.classList.toggle('active', idx === nextIdx);
+      });
+      const dots = card.querySelectorAll('.card-dot');
+      dots.forEach((dot, idx) => {
+        const isAct = idx === nextIdx;
+        dot.classList.toggle('active', isAct);
+        dot.setAttribute('aria-selected', isAct);
+      });
+    }
+  }
+
   function cardHtml(p, i) {
     const s = getStock(p.id), inWish = wish.includes(p.id);
+    const activeIdx = getCardImgIdx(p.id);
+    const imgs = p.images && p.images.length ? p.images : [p.still || p.img];
     return `<article class="card" style="animation-delay:${i * 60}ms" data-id="${p.id}">
       <button class="wish" data-action="wish" aria-pressed="${inWish}" aria-label="${inWish ? 'Remove' : 'Add'} ${p.name} ${inWish ? 'from' : 'to'} wishlist">${inWish ? '♥' : '♡'}</button>
-      <button class="p-media" data-action="view" style="background:${grad(p)}" aria-label="View details for ${p.name}">${tagHtml(p)}${mediaTag(p)}</button>
+      <div class="card-media-wrap">
+        <button class="p-media" data-action="view" style="background:${grad(p)}" aria-label="View details for ${p.name}">
+          ${tagHtml(p)}
+          <div class="card-img-slider">
+            ${imgs.map((src, idx) => `
+              <img class="p-img ${idx === activeIdx ? 'active' : ''}" 
+                   src="${src}" 
+                   data-idx="${idx}" 
+                   data-emoji="${p.emoji}" 
+                   alt="${p.name} view ${idx + 1}" 
+                   width="512" height="512" 
+                   loading="${i < 4 && idx === 0 ? 'eager' : 'lazy'}" 
+                   decoding="async">
+            `).join('')}
+          </div>
+        </button>
+        ${imgs.length > 1 ? `
+          <div class="card-nav-wrap">
+            <button class="card-nav card-nav-prev" data-card-nav="prev" type="button" aria-label="Previous image of ${p.name}">‹</button>
+            <button class="card-nav card-nav-next" data-card-nav="next" type="button" aria-label="Next image of ${p.name}">›</button>
+          </div>
+          <div class="card-dots" role="tablist" aria-label="Images for ${p.name}">
+            ${imgs.map((_, idx) => `
+              <button class="card-dot ${idx === activeIdx ? 'active' : ''}" 
+                      data-card-dot="${idx}" 
+                      type="button" 
+                      role="tab" 
+                      aria-selected="${idx === activeIdx}" 
+                      aria-label="Image ${idx + 1} of ${imgs.length}">
+              </button>
+            `).join('')}
+          </div>
+        ` : ''}
+      </div>
       <div class="p-body">
         <p class="cat-label">${catName(p.category)}</p>
         <button class="p-name" data-action="view">${p.name}</button>
@@ -206,11 +273,62 @@
   }
   $('#grid').addEventListener('click', e => {
     const card = e.target.closest('.card'); if (!card) return;
-    const id = Number(card.dataset.id), act = e.target.closest('[data-action]')?.dataset.action;
-    if (act === 'add') addToCart(id, 1, e.target.closest('.card').querySelector('.p-img, .p-emoji'));
+    const id = Number(card.dataset.id);
+
+    const navBtn = e.target.closest('[data-card-nav]');
+    if (navBtn) {
+      e.stopPropagation();
+      e.preventDefault();
+      const dir = navBtn.dataset.cardNav;
+      const cur = getCardImgIdx(id);
+      setCardImgIdx(id, dir === 'next' ? cur + 1 : cur - 1);
+      return;
+    }
+
+    const dotBtn = e.target.closest('[data-card-dot]');
+    if (dotBtn) {
+      e.stopPropagation();
+      e.preventDefault();
+      setCardImgIdx(id, Number(dotBtn.dataset.cardDot));
+      return;
+    }
+
+    const act = e.target.closest('[data-action]')?.dataset.action;
+    if (act === 'add') addToCart(id, 1, card.querySelector('.p-img.active, .p-img, .p-emoji'));
     else if (act === 'wish') toggleWish(id);
-    else if (act === 'view') openProduct(id);
+    else if (act === 'view') openProduct(id, getCardImgIdx(id));
   });
+
+  $('#grid').addEventListener('mouseover', e => {
+    const dotBtn = e.target.closest('[data-card-dot]');
+    if (dotBtn) {
+      const card = dotBtn.closest('.card');
+      if (card) setCardImgIdx(Number(card.dataset.id), Number(dotBtn.dataset.cardDot));
+    }
+  });
+
+  let cardTouchX = 0, cardTouchY = 0;
+  $('#grid').addEventListener('touchstart', e => {
+    const wrap = e.target.closest('.card-media-wrap');
+    if (!wrap) return;
+    cardTouchX = e.touches[0].clientX;
+    cardTouchY = e.touches[0].clientY;
+  }, { passive: true });
+
+  $('#grid').addEventListener('touchend', e => {
+    const wrap = e.target.closest('.card-media-wrap');
+    if (!wrap) return;
+    const dx = e.changedTouches[0].clientX - cardTouchX;
+    const dy = e.changedTouches[0].clientY - cardTouchY;
+    if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy)) {
+      const card = wrap.closest('.card');
+      if (card) {
+        const id = Number(card.dataset.id);
+        const cur = getCardImgIdx(id);
+        setCardImgIdx(id, dx < 0 ? cur + 1 : cur - 1);
+      }
+    }
+  }, { passive: true });
   $('#sortSelect').onchange = e => { filters.sort = e.target.value; renderProducts(); };
   $('#priceRange').oninput = e => { filters.max = Number(e.target.value); $('#priceOut').textContent = money(filters.max); renderProducts(); };
   $('#stockOnly').onchange = e => { filters.inStock = e.target.checked; renderProducts(); };
@@ -275,10 +393,87 @@
   $('#wishBtn').onclick = () => { renderWishlist(); openModal('wishOverlay'); };
 
   /* ---------- product quick view ---------- */
-  let pmId = null, pmQty = 1;
-  function openProduct(id) {
+  let pmId = null, pmQty = 1, pmImgIdx = 0;
+
+  function setModalImage(newIdx) {
+    if (pmId == null) return;
+    const p = byId(pmId);
+    if (!p) return;
+    const imgs = p.images && p.images.length ? p.images : [p.still || p.img];
+    const len = imgs.length;
+    pmImgIdx = (newIdx % len + len) % len;
+
+    // Sync card image index too
+    setCardImgIdx(p.id, pmImgIdx);
+
+    const m = $('#pmMedia');
+    const curImg = m.querySelector('.pm-img');
+    const nextSrc = imgs[pmImgIdx];
+
+    if (curImg) {
+      curImg.style.opacity = '0';
+      curImg.style.transform = 'scale(0.97)';
+      setTimeout(() => {
+        curImg.src = nextSrc;
+        curImg.alt = `${p.name} - view ${pmImgIdx + 1}`;
+        curImg.style.opacity = '1';
+        curImg.style.transform = 'scale(1)';
+      }, 140);
+    } else {
+      m.innerHTML = `<img class="pm-img" src="${nextSrc}" data-emoji="${p.emoji}" alt="${p.name} - view ${pmImgIdx + 1}" width="512" height="512" decoding="async">`;
+    }
+
+    const counter = $('#pmCounter');
+    if (counter) counter.textContent = `${pmImgIdx + 1} / ${len}`;
+
+    const thumbs = $$('.pm-thumb-btn', $('#pmThumbs'));
+    thumbs.forEach((t, i) => {
+      const isAct = i === pmImgIdx;
+      t.classList.toggle('active', isAct);
+      t.setAttribute('aria-selected', isAct);
+    });
+  }
+
+  function renderModalGallery(p) {
+    const imgs = p.images && p.images.length ? p.images : [p.still || p.img];
+    pmImgIdx = Math.max(0, Math.min(pmImgIdx, imgs.length - 1));
+    const m = $('#pmMedia');
+    m.style.background = grad(p);
+    m.innerHTML = `<img class="pm-img" src="${imgs[pmImgIdx]}" data-emoji="${p.emoji}" alt="${p.name} - view ${pmImgIdx + 1}" width="512" height="512" decoding="async">`;
+    m.setAttribute('aria-label', `Photo of ${p.name}`);
+
+    const counter = $('#pmCounter');
+    if (counter) counter.textContent = `${pmImgIdx + 1} / ${imgs.length}`;
+
+    const thumbsBox = $('#pmThumbs');
+    if (imgs.length > 1) {
+      thumbsBox.hidden = false;
+      thumbsBox.innerHTML = imgs.map((src, i) => `
+        <button type="button" 
+                class="pm-thumb-btn ${i === pmImgIdx ? 'active' : ''}" 
+                data-pm-thumb="${i}" 
+                role="tab" 
+                aria-selected="${i === pmImgIdx}" 
+                aria-label="View photo ${i + 1} of ${p.name}">
+          <img src="${src}" alt="" width="74" height="74" loading="lazy">
+        </button>
+      `).join('');
+      $('#pmPrev').hidden = false;
+      $('#pmNext').hidden = false;
+      if (counter) counter.hidden = false;
+    } else {
+      thumbsBox.hidden = true;
+      thumbsBox.innerHTML = '';
+      $('#pmPrev').hidden = true;
+      $('#pmNext').hidden = true;
+      if (counter) counter.hidden = true;
+    }
+  }
+
+  function openProduct(id, initialIdx = 0) {
     const p = byId(id); pmId = p.id; pmQty = 1;
-    const m = $('#pmMedia'); m.style.background = grad(p); m.innerHTML = `<img class="pm-img" src="${motionOff() ? p.still : p.img}" data-anim="${p.img}" data-still="${p.still}" data-emoji="${p.emoji}" alt="${p.name}" width="512" height="512" decoding="async">`; m.setAttribute('aria-label', 'Photo of ' + p.name);
+    pmImgIdx = initialIdx || 0;
+    renderModalGallery(p);
     $('#pmCat').textContent = catName(p.category);
     $('#pmName').textContent = p.name;
     $('#pmRating').innerHTML = `<div class="rating">${starsHtml(p)} <span>${p.rating} out of 5 · ${p.reviews} reviews</span></div>`;
@@ -288,6 +483,7 @@
     refreshProductModal();
     openModal('productOverlay', '#pmAdd:not(:disabled), .modal-close');
   }
+
   function refreshProductModal() {
     if (pmId == null) return; const p = byId(pmId), s = getStock(p.id), inCart = cart[p.id] || 0, room = s - inCart;
     const st = $('#pmStock');
@@ -301,11 +497,44 @@
     $('#pmAdd').textContent = s === 0 ? 'Out of stock' : room < 1 ? 'Max quantity in basket' : `Add ${pmQty} to basket`;
     syncProductModalWish();
   }
+
   function syncProductModalWish() { if (pmId == null) return; const w = wish.includes(pmId); const b = $('#pmWish'); b.setAttribute('aria-pressed', w); b.textContent = w ? '♥ Saved' : '♡ Save'; }
   $('#pmMinus').onclick = () => { pmQty--; refreshProductModal(); };
   $('#pmPlus').onclick = () => { pmQty++; refreshProductModal(); };
   $('#pmAdd').onclick = () => { addToCart(pmId, pmQty, $('#pmMedia img, #pmMedia span')); refreshProductModal(); };
   $('#pmWish').onclick = () => toggleWish(pmId);
+
+  $('#pmPrev').onclick = () => setModalImage(pmImgIdx - 1);
+  $('#pmNext').onclick = () => setModalImage(pmImgIdx + 1);
+  $('#pmThumbs').addEventListener('click', e => {
+    const btn = e.target.closest('[data-pm-thumb]');
+    if (btn) setModalImage(Number(btn.dataset.pmThumb));
+  });
+
+  let pmTouchX = 0, pmTouchY = 0;
+  $('#pmMedia').addEventListener('touchstart', e => {
+    pmTouchX = e.touches[0].clientX;
+    pmTouchY = e.touches[0].clientY;
+  }, { passive: true });
+  $('#pmMedia').addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - pmTouchX;
+    const dy = e.changedTouches[0].clientY - pmTouchY;
+    if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy)) {
+      setModalImage(dx < 0 ? pmImgIdx + 1 : pmImgIdx - 1);
+    }
+  }, { passive: true });
+
+  document.addEventListener('keydown', e => {
+    const ov = $('#productOverlay');
+    if (!ov || ov.hidden || !ov.classList.contains('open')) return;
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      setModalImage(pmImgIdx - 1);
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      setModalImage(pmImgIdx + 1);
+    }
+  });
 
   /* ---------- basket ---------- */
   function addToCart(id, qty = 1, srcEl) {
@@ -870,27 +1099,20 @@
   const canHover = matchMedia('(hover: hover)').matches;
   const heroVideo = $('#heroVideo');
   let heroVisible = true;
-  PRODUCTS.forEach(p => { p.img = `product-${p.id}-still.jpg`; p.still = p.img; });
+  PRODUCTS.forEach(p => {
+    p.images = [
+      `product-${p.id}-still.jpg`,
+      `product-${p.id}-2.jpg`,
+      `product-${p.id}-3.jpg`
+    ];
+    p.img = p.images[0];
+    p.still = p.images[0];
+  });
 
-  /* cards show a light still image, and play the animation on hover or focus (touch screens play it straight away) */
-  function mediaTag(p) {
-    const src = (motionOff() || canHover) ? p.still : p.img;
-    return `<img class="p-img" src="${src}" data-anim="${p.img}" data-still="${p.still}" data-emoji="${p.emoji}" alt="${p.name}" width="512" height="512" loading="lazy" decoding="async">`;
-  }
   function thumbImg(p) {
-    return `<img src="${p.still}" data-still="${p.still}" data-emoji="${p.emoji}" alt="" width="64" height="64" loading="lazy" decoding="async">`;
+    const src = (p.images && p.images[0]) || p.still || p.img;
+    return `<img src="${src}" data-still="${src}" data-emoji="${p.emoji}" alt="" width="64" height="64" loading="lazy" decoding="async">`;
   }
-  function swapCardMedia(card, play) {
-    const im = card && card.querySelector('.p-img'); if (!im) return;
-    if (play && motionOff()) return;
-    const want = play ? im.dataset.anim : im.dataset.still;
-    if (!im.src.endsWith(want)) im.src = want;
-  }
-  const gridEl = $('#grid');
-  gridEl.addEventListener('mouseover', e => swapCardMedia(e.target.closest('.card'), true));
-  gridEl.addEventListener('mouseout', e => { const c = e.target.closest('.card'); if (canHover && c && !c.contains(e.relatedTarget)) swapCardMedia(c, false); });
-  gridEl.addEventListener('focusin', e => swapCardMedia(e.target.closest('.card'), true));
-  gridEl.addEventListener('focusout', e => { const c = e.target.closest('.card'); if (canHover && c && !c.contains(e.relatedTarget)) swapCardMedia(c, false); });
 
   /* if an image file is missing, fall back to the still, then to the emoji, so the store never shows a broken picture */
   document.addEventListener('error', e => {

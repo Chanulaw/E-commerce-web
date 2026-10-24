@@ -8,6 +8,11 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+<div class="glass-aurora" aria-hidden="true">
+  <div class="aurora-orb orb-1"></div>
+  <div class="aurora-orb orb-2"></div>
+  <div class="aurora-orb orb-3"></div>
+</div>
 <a class="skip-link" href="#main">Skip to main content</a>
 
 <div class="promo-bar" role="note">
@@ -167,6 +172,15 @@
     </div>
   </section>
 
+  <!-- RECENTLY VIEWED -->
+  <section class="container recent-section reveal" id="recentSection" aria-labelledby="recentTitle" hidden>
+    <div class="section-head">
+      <h2 id="recentTitle">Recently viewed</h2>
+      <button class="link-btn small" id="clearRecentBtn" type="button">Clear history</button>
+    </div>
+    <div class="recent-scroll" id="recentGrid" role="region" aria-label="Recently viewed products"></div>
+  </section>
+
   <!-- PROMO VIDEO -->
   <section class="container promo-video reveal" aria-labelledby="videoTitle">
     <div class="pv-text">
@@ -238,12 +252,37 @@
 
 <button class="to-top" id="toTop" aria-label="Back to top" hidden>↑</button>
 
+<!-- FLOATING GLASS QUICK BAR -->
+<aside class="glass-quick-bar" id="glassQuickBar" aria-label="Quick cart summary" hidden>
+  <div class="gqb-content">
+    <div class="gqb-info">
+      <span class="gqb-icon" aria-hidden="true">🛍️</span>
+      <div class="gqb-text">
+        <strong id="gqbCount">0 items</strong>
+        <span class="muted" id="gqbTotal">Rs. 0</span>
+      </div>
+    </div>
+    <div class="gqb-actions">
+      <button class="btn btn-sm btn-ghost" id="gqbWishBtn" aria-label="Open wishlist">♡ <span id="gqbWishCount">0</span></button>
+      <button class="btn btn-sm btn-primary" id="gqbCartBtn">Basket 🛒</button>
+    </div>
+  </div>
+</aside>
+
 <!-- QUICK VIEW -->
 <div class="overlay" id="productOverlay" hidden>
   <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="pmName" tabindex="-1">
     <button class="icon-btn modal-close" data-close aria-label="Close product details">✕</button>
     <div class="pm-grid">
-      <div class="pm-media" id="pmMedia" role="img" aria-label=""></div>
+      <div class="pm-gallery">
+        <div class="pm-media-stage">
+          <div class="pm-media" id="pmMedia" role="region" aria-label="Product photo"></div>
+          <button class="pm-nav pm-nav-prev" id="pmPrev" type="button" aria-label="Previous image">‹</button>
+          <button class="pm-nav pm-nav-next" id="pmNext" type="button" aria-label="Next image">›</button>
+          <span class="pm-counter" id="pmCounter" aria-live="polite">1 / 3</span>
+        </div>
+        <div class="pm-thumbs" id="pmThumbs" role="tablist" aria-label="Choose product image"></div>
+      </div>
       <div class="pm-info">
         <p class="cat-label" id="pmCat"></p>
         <h2 id="pmName"></h2>
