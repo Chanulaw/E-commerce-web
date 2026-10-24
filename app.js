@@ -507,14 +507,16 @@
           <img src="${src}" alt="" width="74" height="74" loading="lazy">
         </button>
       `).join('');
-      $('#pmPrev').hidden = false;
-      $('#pmNext').hidden = false;
+      const pPrev = $('#pmPrev'), pNext = $('#pmNext');
+      if (pPrev) pPrev.hidden = false;
+      if (pNext) pNext.hidden = false;
       if (counter) counter.hidden = false;
     } else {
       thumbsBox.hidden = true;
       thumbsBox.innerHTML = '';
-      $('#pmPrev').hidden = true;
-      $('#pmNext').hidden = true;
+      const pPrev = $('#pmPrev'), pNext = $('#pmNext');
+      if (pPrev) pPrev.hidden = true;
+      if (pNext) pNext.hidden = true;
       if (counter) counter.hidden = true;
     }
   }
@@ -553,25 +555,31 @@
   $('#pmAdd').onclick = () => { addToCart(pmId, pmQty, $('#pmMedia img, #pmMedia span')); refreshProductModal(); };
   $('#pmWish').onclick = () => toggleWish(pmId);
 
-  $('#pmPrev').onclick = () => setModalImage(pmImgIdx - 1);
-  $('#pmNext').onclick = () => setModalImage(pmImgIdx + 1);
-  $('#pmThumbs').addEventListener('click', e => {
-    const btn = e.target.closest('[data-pm-thumb]');
-    if (btn) setModalImage(Number(btn.dataset.pmThumb));
-  });
+  const pmPrevBtn = $('#pmPrev'); if (pmPrevBtn) pmPrevBtn.onclick = () => setModalImage(pmImgIdx - 1);
+  const pmNextBtn = $('#pmNext'); if (pmNextBtn) pmNextBtn.onclick = () => setModalImage(pmImgIdx + 1);
+  const pmThumbsBox = $('#pmThumbs');
+  if (pmThumbsBox) {
+    pmThumbsBox.addEventListener('click', e => {
+      const btn = e.target.closest('[data-pm-thumb]');
+      if (btn) setModalImage(Number(btn.dataset.pmThumb));
+    });
+  }
 
   let pmTouchX = 0, pmTouchY = 0;
-  $('#pmMedia').addEventListener('touchstart', e => {
-    pmTouchX = e.touches[0].clientX;
-    pmTouchY = e.touches[0].clientY;
-  }, { passive: true });
-  $('#pmMedia').addEventListener('touchend', e => {
-    const dx = e.changedTouches[0].clientX - pmTouchX;
-    const dy = e.changedTouches[0].clientY - pmTouchY;
-    if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy)) {
-      setModalImage(dx < 0 ? pmImgIdx + 1 : pmImgIdx - 1);
-    }
-  }, { passive: true });
+  const pmMediaBox = $('#pmMedia');
+  if (pmMediaBox) {
+    pmMediaBox.addEventListener('touchstart', e => {
+      pmTouchX = e.touches[0].clientX;
+      pmTouchY = e.touches[0].clientY;
+    }, { passive: true });
+    pmMediaBox.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - pmTouchX;
+      const dy = e.changedTouches[0].clientY - pmTouchY;
+      if (Math.abs(dx) > 35 && Math.abs(dx) > Math.abs(dy)) {
+        setModalImage(dx < 0 ? pmImgIdx + 1 : pmImgIdx - 1);
+      }
+    }, { passive: true });
+  }
 
   document.addEventListener('keydown', e => {
     const ov = $('#productOverlay');
@@ -858,8 +866,12 @@
   const header = $('.site-header'), toTop = $('#toTop');
   addEventListener('scroll', () => { header.classList.toggle('scrolled', scrollY > 10); toTop.hidden = scrollY < 600; }, { passive: true });
   toTop.onclick = () => scrollTo({ top: 0, behavior: motionOff() ? 'auto' : 'smooth' });
-  const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }), { threshold: .12 }) : null;
-  $$('.reveal').forEach(el => io ? io.observe(el) : el.classList.add('in'));
+  const io = 'IntersectionObserver' in window ? new IntersectionObserver(es => es.forEach(en => { if (en.isIntersecting) { en.target.classList.add('in'); io.unobserve(en.target); } }), { threshold: .01, rootMargin: '0px 0px 100px 0px' }) : null;
+  $$('.reveal').forEach(el => {
+    if (el.getBoundingClientRect().top < window.innerHeight) el.classList.add('in');
+    else if (io) io.observe(el);
+    else el.classList.add('in');
+  });
   /* ---------- user accounts (front-end demo: everything is kept in this browser's localStorage) ---------- */
   const enc = new TextEncoder();
   const toHex = buf => [...new Uint8Array(buf)].map(b => b.toString(16).padStart(2, '0')).join('');
