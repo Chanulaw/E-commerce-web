@@ -12,22 +12,24 @@
   const money = n => 'Rs. ' + Math.round(n).toLocaleString('en-US');
   const motionOff = () => document.documentElement.classList.contains('no-motion') || matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---------- data: exactly 10 products, exactly 3 categories ---------- */
+  /* ---------- catalog: 10 products across categories matching hosted site ---------- */
   const CATEGORIES = [
     { id: 'electronics', name: 'Electronics', icon: '🔌' },
     { id: 'clothing', name: 'Clothing', icon: '👕' },
-    { id: 'food', name: 'Food & Drink', icon: '🍵' }
+    { id: 'food', name: 'Food & Drink', icon: '🍵' },
+    { id: 'home', name: 'Home & Living', icon: '🏠' },
+    { id: 'beauty', name: 'Beauty & Personal Care', icon: '🧴' }
   ];
   const PRODUCTS = [
     { id: 1, name: 'Aurora Wireless Headphones', category: 'electronics', price: 18500, was: 22000, stock: 12, rating: 4.6, reviews: 328, emoji: '🎧', c: ['#6366f1', '#a78bfa'], desc: 'Over-ear Bluetooth 5.3 headphones with active noise cancellation and all-day comfort.', features: ['Active noise cancellation', '40-hour battery life', 'Foldable design', 'Built-in microphone'] },
     { id: 2, name: 'Pulse Smart Watch', category: 'electronics', price: 24900, was: null, stock: 7, rating: 4.4, reviews: 212, emoji: '⌚', c: ['#0ea5e9', '#22d3ee'], desc: 'Track steps, heart rate and sleep with a bright AMOLED display and week-long battery.', features: ['AMOLED touch display', 'Heart-rate and sleep tracking', 'Water resistant (5 ATM)', '7-day battery'] },
-    { id: 3, name: 'Echo Mini Bluetooth Speaker', category: 'electronics', price: 9750, was: 11500, stock: 3, rating: 4.3, reviews: 154, emoji: '🔊', c: ['#ec4899', '#f97316'], desc: 'A pocket-sized speaker with surprisingly deep bass and a splash-proof body.', features: ['360° sound', 'IPX6 splash proof', '12-hour playtime', 'Pairs two speakers'] },
-    { id: 4, name: 'VoltMax 20000mAh Power Bank', category: 'electronics', price: 7200, was: null, stock: 0, rating: 4.7, reviews: 97, emoji: '🔋', c: ['#14b8a6', '#84cc16'], desc: 'Fast-charging power bank that keeps your phone and tablet going for days.', features: ['20000mAh capacity', '22.5W fast charge', 'Dual USB + USB-C', 'LED charge indicator'] },
+    { id: 3, name: 'Echo Mini Bluetooth Speaker', category: 'home', price: 9750, was: 11500, stock: 3, rating: 4.3, reviews: 154, emoji: '🔊', c: ['#ec4899', '#f97316'], desc: 'A pocket-sized speaker with surprisingly deep bass and a splash-proof body.', features: ['360° sound', 'IPX6 splash proof', '12-hour playtime', 'Pairs two speakers'] },
+    { id: 4, name: 'VoltMax 20000mAh Power Bank', category: 'home', price: 7200, was: null, stock: 0, rating: 4.7, reviews: 97, emoji: '🔋', c: ['#14b8a6', '#84cc16'], desc: 'Fast-charging power bank that keeps your phone and tablet going for days.', features: ['20000mAh capacity', '22.5W fast charge', 'Dual USB + USB-C', 'LED charge indicator'] },
     { id: 5, name: 'Everyday Cotton T-Shirt', category: 'clothing', price: 2850, was: null, stock: 40, rating: 4.2, reviews: 540, emoji: '👕', c: ['#38bdf8', '#818cf8'], desc: 'Soft 100% combed cotton tee with a relaxed fit that works with everything.', features: ['100% combed cotton', 'Pre-shrunk fabric', 'Machine washable', 'Sizes S to XXL'] },
     { id: 6, name: 'Classic Denim Jacket', category: 'clothing', price: 11900, was: 14500, stock: 9, rating: 4.5, reviews: 187, emoji: '🧥', c: ['#1d4ed8', '#60a5fa'], desc: 'A timeless mid-wash denim jacket with sturdy stitching and metal buttons.', features: ['Durable mid-weight denim', 'Two chest pockets', 'Regular fit', 'Gets better with wear'] },
     { id: 7, name: 'StrideFlex Running Shoes', category: 'clothing', price: 15400, was: null, stock: 15, rating: 4.6, reviews: 263, emoji: '👟', c: ['#f43f5e', '#fb923c'], desc: 'Lightweight running shoes with responsive cushioning and a breathable knit upper.', features: ['Breathable knit upper', 'Responsive foam midsole', 'Anti-slip outsole', 'Under 270g'] },
     { id: 8, name: 'Ceylon Tea Gift Box', category: 'food', price: 3600, was: null, stock: 25, rating: 4.8, reviews: 402, emoji: '🍵', c: ['#16a34a', '#a3e635'], desc: 'Six premium single-estate Ceylon teas, beautifully packed for gifting.', features: ['6 estate varieties', '120 g total', 'Recyclable gift box', 'Freshly packed in Sri Lanka'] },
-    { id: 9, name: 'Virgin Coconut Oil 500ml', category: 'food', price: 1950, was: 2300, stock: 30, rating: 4.5, reviews: 318, emoji: '🥥', c: ['#92400e', '#fbbf24'], desc: 'Cold-pressed virgin coconut oil for cooking, hair and skin.', features: ['Cold pressed', 'No additives', '500 ml glass bottle', 'Multi-purpose use'] },
+    { id: 9, name: 'Virgin Coconut Oil 500ml', category: 'beauty', price: 1950, was: 2300, stock: 30, rating: 4.5, reviews: 318, emoji: '🥥', c: ['#92400e', '#fbbf24'], desc: 'Cold-pressed virgin coconut oil for cooking, hair and skin.', features: ['Cold pressed', 'No additives', '500 ml glass bottle', 'Multi-purpose use'] },
     { id: 10, name: 'Dark Chocolate Collection', category: 'food', price: 1250, was: null, stock: 4, rating: 4.7, reviews: 129, emoji: '🍫', c: ['#7c2d12', '#be123c'], desc: 'Smooth 70% cocoa chocolate with notes of cinnamon, ginger and sea salt.', features: ['70% cocoa', '4 flavours', 'Ethically sourced cocoa', '200 g'] }
   ];
   PRODUCTS.forEach(p => {
