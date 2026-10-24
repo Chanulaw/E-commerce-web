@@ -12,55 +12,11 @@
   const money = n => 'Rs. ' + Math.round(n).toLocaleString('en-US');
   const motionOff = () => document.documentElement.classList.contains('no-motion') || matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  /* ---------- catalog: 10 products in each of 5 categories ---------- */
+  /* ---------- data: exactly 10 products, exactly 3 categories ---------- */
   const CATEGORIES = [
     { id: 'electronics', name: 'Electronics', icon: '🔌' },
     { id: 'clothing', name: 'Clothing', icon: '👕' },
-    { id: 'food', name: 'Food & Drink', icon: '🍵' },
-    { id: 'home', name: 'Home & Living', icon: '🏠' },
-    { id: 'beauty', name: 'Beauty & Personal Care', icon: '🧴' }
-  ];
-  const EXTRA_PRODUCTS = [
-    { category: 'electronics', name: 'Luma Mirrorless Camera', price: 22900, stock: 8, rating: 4.6, reviews: 116, emoji: '📷', c: ['#334155', '#94a3b8'], desc: 'Capture sharp everyday photos and video with a compact, easy-to-carry camera.', features: ['Compact mirrorless body', 'Sharp high-resolution photos', 'Built-in flash', 'Rechargeable battery'] },
-    { category: 'electronics', name: 'SwiftBook 14-inch Laptop', price: 24900, stock: 6, rating: 4.5, reviews: 143, emoji: '💻', c: ['#475569', '#cbd5e1'], desc: 'A slim everyday laptop for study, work and browsing on the go.', features: ['14-inch display', 'Lightweight design', 'Full-size keyboard', 'Multiple connectivity ports'] },
-    { category: 'electronics', name: 'StudioView HD Webcam', price: 8900, stock: 11, rating: 4.3, reviews: 82, emoji: '📹', c: ['#0f766e', '#5eead4'], desc: 'Look clear on video calls with a simple plug-and-play desktop webcam.', features: ['Full HD video', 'Built-in microphone', 'Clip-on monitor mount', 'USB plug and play'] },
-    { category: 'electronics', name: 'Pulse Wireless Earbuds', price: 6800, stock: 18, rating: 4.4, reviews: 204, emoji: '🎧', c: ['#6366f1', '#c4b5fd'], desc: 'Lightweight wireless earbuds with a pocket-sized charging case for daily listening.', features: ['Bluetooth connection', 'Charging case included', 'Touch controls', 'Comfort-fit ear tips'] },
-    { category: 'electronics', name: 'Arc Portable SSD 1TB', price: 14500, stock: 9, rating: 4.7, reviews: 91, emoji: '💾', c: ['#0f766e', '#99f6e4'], desc: 'Keep photos, schoolwork and project files close with fast portable storage.', features: ['1TB storage capacity', 'Pocket-sized enclosure', 'USB-C connectivity', 'Protective casing'] },
-    { category: 'electronics', name: 'Focus Wireless Keyboard', price: 5900, stock: 14, rating: 4.2, reviews: 67, emoji: '⌨️', c: ['#334155', '#94a3b8'], desc: 'A comfortable wireless keyboard for a tidy desk and everyday typing.', features: ['Quiet low-profile keys', 'Wireless connection', 'Compact layout', 'Long-lasting battery'] },
-    { category: 'clothing', name: 'Linen Blend Button-Up Shirt', price: 4950, stock: 20, rating: 4.3, reviews: 102, emoji: '👔', c: ['#0f766e', '#99f6e4'], desc: 'A breathable linen-blend shirt with a relaxed fit for warm days and easy layering.', features: ['Breathable linen blend', 'Button-front closure', 'Relaxed fit', 'Machine washable'] },
-    { category: 'clothing', name: 'Everyday Denim Jeans', price: 7900, stock: 16, rating: 4.4, reviews: 148, emoji: '👖', c: ['#1d4ed8', '#93c5fd'], desc: 'Classic straight-leg denim made for comfortable everyday wear.', features: ['Mid-weight denim', 'Straight-leg fit', 'Five-pocket design', 'Sizes 28 to 38'] },
-    { category: 'clothing', name: 'Weekend Fleece Hoodie', price: 6500, stock: 13, rating: 4.5, reviews: 124, emoji: '🧥', c: ['#7c3aed', '#c4b5fd'], desc: 'A soft fleece hoodie with a roomy fit for relaxed weekends and cool evenings.', features: ['Soft fleece lining', 'Adjustable drawstring hood', 'Front kangaroo pocket', 'Ribbed cuffs'] },
-    { category: 'clothing', name: 'Classic Leather Sneakers', price: 9900, stock: 10, rating: 4.3, reviews: 88, emoji: '👟', c: ['#475569', '#cbd5e1'], desc: 'Versatile low-top sneakers with a clean profile for everyday outfits.', features: ['Low-top silhouette', 'Cushioned footbed', 'Durable rubber sole', 'Lace-up fit'] },
-    { category: 'clothing', name: 'Ribbed Knit Sweater', price: 7200, stock: 9, rating: 4.2, reviews: 73, emoji: '🧶', c: ['#b45309', '#fcd34d'], desc: 'A cozy ribbed sweater with a timeless shape that layers easily.', features: ['Soft-touch knit', 'Ribbed neckline and cuffs', 'Regular fit', 'Gentle machine wash'] },
-    { category: 'clothing', name: 'Lightweight Windbreaker', price: 8400, stock: 12, rating: 4.4, reviews: 96, emoji: '🧥', c: ['#0369a1', '#7dd3fc'], desc: 'A lightweight layer that helps keep wind off during walks and commutes.', features: ['Lightweight outer fabric', 'Full zip front', 'Adjustable hood', 'Two side pockets'] },
-    { category: 'clothing', name: 'Canvas Weekend Backpack', price: 5600, stock: 17, rating: 4.6, reviews: 135, emoji: '🎒', c: ['#92400e', '#fbbf24'], desc: 'A practical canvas backpack with space for daily essentials and weekend plans.', features: ['Durable canvas body', 'Padded shoulder straps', 'Interior laptop sleeve', 'Front zip pocket'] },
-    { category: 'food', name: 'Roasted Coffee Beans 250g', price: 2450, stock: 24, rating: 4.7, reviews: 176, emoji: '☕', c: ['#78350f', '#d97706'], desc: 'Freshly roasted whole coffee beans with a smooth aroma for your morning brew.', features: ['250 g whole beans', 'Medium roast', 'Roasted in small batches', 'Resealable pack'] },
-    { category: 'food', name: 'Honey Almond Granola', price: 1650, stock: 28, rating: 4.5, reviews: 122, emoji: '🥣', c: ['#a16207', '#fde68a'], desc: 'Crunchy baked oats with almonds and a touch of honey for breakfast or snacking.', features: ['Oats and roasted almonds', 'Lightly sweetened with honey', 'Ready to enjoy', 'Resealable pack'] },
-    { category: 'food', name: 'Ceylon Cinnamon Sticks', price: 980, stock: 32, rating: 4.8, reviews: 93, emoji: '🪵', c: ['#92400e', '#fbbf24'], desc: 'Fragrant Ceylon cinnamon sticks to bring gentle warmth to drinks and cooking.', features: ['100% Ceylon cinnamon', 'Whole aromatic sticks', 'No added ingredients', 'Packed fresh in Sri Lanka'] },
-    { category: 'food', name: 'Honey Almond Biscotti', price: 1350, stock: 19, rating: 4.4, reviews: 81, emoji: '🍪', c: ['#b45309', '#fde68a'], desc: 'Crisp almond biscotti baked for dipping into coffee or enjoying as a treat.', features: ['Almonds in every batch', 'Twice-baked crunch', 'Small-batch baked', 'Resealable pack'] },
-    { category: 'food', name: 'Tropical Fruit Preserve', price: 1150, stock: 21, rating: 4.3, reviews: 64, emoji: '🍯', c: ['#be123c', '#fda4af'], desc: 'A bright fruit preserve that pairs well with toast, yogurt and desserts.', features: ['Made with ripe fruit', 'Small-batch prepared', 'No artificial colours', 'Glass jar'] },
-    { category: 'food', name: 'Herbal Infusion Sampler', price: 1850, stock: 23, rating: 4.6, reviews: 109, emoji: '🍵', c: ['#15803d', '#a3e635'], desc: 'A selection of soothing caffeine-free herbal infusions for a relaxing cup.', features: ['Mixed herbal varieties', 'Individually wrapped bags', 'Caffeine free', 'Easy-to-follow brewing guide'] },
-    { category: 'food', name: 'Artisan Sourdough Loaf', price: 1250, stock: 8, rating: 4.5, reviews: 58, emoji: '🍞', c: ['#a16207', '#fcd34d'], desc: 'A crusty artisan loaf with a tangy flavour, baked fresh in small batches.', features: ['Naturally fermented dough', 'Small-batch baked', 'Crisp golden crust', 'Best enjoyed fresh'] },
-    { category: 'home', name: 'Linen Table Runner', price: 3200, stock: 15, rating: 4.4, reviews: 69, emoji: '🧵', c: ['#a16207', '#fde68a'], desc: 'A relaxed woven table runner that adds a warm, natural touch to everyday meals.', features: ['Textured linen blend', 'Neutral easy-match colour', 'Fits most dining tables', 'Machine washable'] },
-    { category: 'home', name: 'Soft Cotton Duvet Set', price: 8900, stock: 10, rating: 4.6, reviews: 121, emoji: '🛏️', c: ['#0284c7', '#bae6fd'], desc: 'A soft, breathable cotton duvet set for a comfortable and refreshed bedroom.', features: ['Breathable cotton fabric', 'Includes duvet cover and pillowcases', 'Button closure', 'Machine washable'] },
-    { category: 'home', name: 'Ceramic Table Lamp', price: 6800, stock: 7, rating: 4.5, reviews: 83, emoji: '🛋️', c: ['#b45309', '#fde68a'], desc: 'A simple ceramic lamp that brings a soft, welcoming glow to a bedside or reading nook.', features: ['Glazed ceramic base', 'Fabric shade', 'Standard bulb fitting', 'Easy inline switch'] },
-    { category: 'home', name: 'Woven Storage Basket', price: 2950, stock: 18, rating: 4.3, reviews: 72, emoji: '🧺', c: ['#92400e', '#fcd34d'], desc: 'A handy woven basket for keeping blankets, toys and everyday clutter neatly stored.', features: ['Handwoven natural texture', 'Lightweight and sturdy', 'Built-in carry handles', 'Versatile home storage'] },
-    { category: 'home', name: 'Decorative Cushion Pair', price: 4250, stock: 11, rating: 4.4, reviews: 98, emoji: '🛋️', c: ['#7c3aed', '#ddd6fe'], desc: 'A coordinated pair of soft cushions to add colour and comfort to your seating.', features: ['Set of two cushion covers', 'Soft woven fabric', 'Concealed zip closure', 'Removable covers'] },
-    { category: 'home', name: 'Oak-Finish Wall Shelf', price: 5400, stock: 8, rating: 4.2, reviews: 53, emoji: '🪵', c: ['#92400e', '#d6a56e'], desc: 'A clean-lined wall shelf for displaying books, plants and treasured keepsakes.', features: ['Warm oak-effect finish', 'Space-saving wall mount', 'Mounting hardware included', 'Wipe-clean surface'] },
-    { category: 'home', name: 'Glass Storage Jar Set', price: 2750, stock: 22, rating: 4.5, reviews: 114, emoji: '🫙', c: ['#0f766e', '#99f6e4'], desc: 'Clear kitchen jars keep pantry staples visible, tidy and easy to reach.', features: ['Set of three glass jars', 'Airtight lids', 'Reusable and easy to clean', 'Ideal for pantry storage'] },
-    { category: 'home', name: 'Cotton Bath Towel Set', price: 4600, stock: 13, rating: 4.6, reviews: 137, emoji: '🛁', c: ['#0369a1', '#bae6fd'], desc: 'A soft cotton towel set with an absorbent feel for everyday bathroom use.', features: ['Soft absorbent cotton', 'Set includes four towels', 'Quick-drying weave', 'Machine washable'] },
-    { category: 'home', name: 'Indoor Ceramic Planter', price: 2450, stock: 16, rating: 4.3, reviews: 61, emoji: '🪴', c: ['#15803d', '#bbf7d0'], desc: 'A minimal ceramic planter for bringing a little greenery to shelves and sunny corners.', features: ['Durable glazed ceramic', 'Drainage hole and saucer', 'Neutral decorative finish', 'Suitable for indoor plants'] },
-    { category: 'home', name: 'Scented Candle Duo', price: 3100, stock: 19, rating: 4.7, reviews: 156, emoji: '🕯️', c: ['#be123c', '#fecdd3'], desc: 'Two gently scented candles create a calm, inviting atmosphere at home.', features: ['Two complementary scents', 'Reusable glass jars', 'Cotton wicks', 'Long, even burn'] },
-    { category: 'beauty', name: 'Daily Hydrating Cleanser', price: 1850, stock: 25, rating: 4.5, reviews: 142, emoji: '🧴', c: ['#0284c7', '#bae6fd'], desc: 'A gentle daily face cleanser that lifts away dirt without leaving skin feeling dry.', features: ['Gentle daily formula', 'Rinses clean without residue', 'Suitable for morning and evening', '100 ml bottle'] },
-    { category: 'beauty', name: 'Vitamin C Brightening Serum', price: 3250, stock: 17, rating: 4.6, reviews: 188, emoji: '✨', c: ['#f97316', '#fed7aa'], desc: 'A lightweight vitamin C serum that layers easily into a simple skincare routine.', features: ['Lightweight serum texture', 'Vitamin C formula', 'Dropper bottle for easy use', '30 ml size'] },
-    { category: 'beauty', name: 'Mineral Sunscreen SPF 50', price: 2850, stock: 20, rating: 4.7, reviews: 215, emoji: '☀️', c: ['#eab308', '#fef08a'], desc: 'A mineral SPF 50 sunscreen for daily sun protection as part of your outdoor routine.', features: ['Broad-spectrum SPF 50', 'Mineral-based formula', 'Travel-friendly tube', 'Apply generously before sun exposure'] },
-    { category: 'beauty', name: 'Rosewater Facial Toner', price: 1650, stock: 21, rating: 4.3, reviews: 97, emoji: '🌹', c: ['#be123c', '#fda4af'], desc: 'A refreshing rosewater toner that leaves skin feeling fresh after cleansing.', features: ['Refreshing rosewater blend', 'Light mist application', 'Alcohol-free formula', '100 ml bottle'] },
-    { category: 'beauty', name: 'Nourishing Body Lotion', price: 2100, stock: 18, rating: 4.4, reviews: 112, emoji: '🧴', c: ['#a16207', '#fde68a'], desc: 'A comforting daily body lotion that spreads easily and leaves skin feeling soft.', features: ['Moisturizing daily formula', 'Non-greasy feel', 'Pump bottle', '250 ml size'] },
-    { category: 'beauty', name: 'Repairing Hair Shampoo', price: 1950, stock: 23, rating: 4.2, reviews: 89, emoji: '🫧', c: ['#7c3aed', '#ddd6fe'], desc: 'A gentle shampoo for cleansing hair and leaving it feeling refreshed and manageable.', features: ['Gentle cleansing formula', 'Suitable for regular use', 'Salon-inspired scent', '300 ml bottle'] },
-    { category: 'beauty', name: 'Lightweight Hair Conditioner', price: 1950, stock: 22, rating: 4.3, reviews: 76, emoji: '💆', c: ['#0f766e', '#99f6e4'], desc: 'A lightweight conditioner that helps detangle hair without weighing it down.', features: ['Easy-to-rinse formula', 'Helps smooth and detangle', 'Suitable for regular use', '300 ml bottle'] },
-    { category: 'beauty', name: 'Overnight Face Moisturizer', price: 2950, stock: 14, rating: 4.5, reviews: 131, emoji: '🌙', c: ['#4338ca', '#c4b5fd'], desc: 'A rich but comfortable night moisturizer to finish your evening skincare routine.', features: ['Comforting overnight formula', 'Soft cream texture', 'Fragrance-conscious blend', '50 ml jar'] },
-    { category: 'beauty', name: 'Shea Butter Hand Cream', price: 1250, stock: 27, rating: 4.4, reviews: 104, emoji: '🤲', c: ['#b45309', '#fde68a'], desc: 'A pocket-sized hand cream with shea butter for a little everyday hand care.', features: ['Shea butter blend', 'Quick-absorbing texture', 'Convenient travel size', '75 ml tube'] },
-    { category: 'beauty', name: 'Silk-Feel Sleep Scrunchies', price: 980, stock: 30, rating: 4.6, reviews: 167, emoji: '🎀', c: ['#be123c', '#fecdd3'], desc: 'A set of gentle, satin-feel scrunchies for comfortable everyday styling and sleep.', features: ['Set of three scrunchies', 'Smooth satin-feel fabric', 'Gentle hold for hair', 'Three coordinated colours'] }
+    { id: 'food', name: 'Food & Drink', icon: '🍵' }
   ];
   const PRODUCTS = [
     { id: 1, name: 'Aurora Wireless Headphones', category: 'electronics', price: 18500, was: 22000, stock: 12, rating: 4.6, reviews: 328, emoji: '🎧', c: ['#6366f1', '#a78bfa'], desc: 'Over-ear Bluetooth 5.3 headphones with active noise cancellation and all-day comfort.', features: ['Active noise cancellation', '40-hour battery life', 'Foldable design', 'Built-in microphone'] },
@@ -72,8 +28,7 @@
     { id: 7, name: 'StrideFlex Running Shoes', category: 'clothing', price: 15400, was: null, stock: 15, rating: 4.6, reviews: 263, emoji: '👟', c: ['#f43f5e', '#fb923c'], desc: 'Lightweight running shoes with responsive cushioning and a breathable knit upper.', features: ['Breathable knit upper', 'Responsive foam midsole', 'Anti-slip outsole', 'Under 270g'] },
     { id: 8, name: 'Ceylon Tea Gift Box', category: 'food', price: 3600, was: null, stock: 25, rating: 4.8, reviews: 402, emoji: '🍵', c: ['#16a34a', '#a3e635'], desc: 'Six premium single-estate Ceylon teas, beautifully packed for gifting.', features: ['6 estate varieties', '120 g total', 'Recyclable gift box', 'Freshly packed in Sri Lanka'] },
     { id: 9, name: 'Virgin Coconut Oil 500ml', category: 'food', price: 1950, was: 2300, stock: 30, rating: 4.5, reviews: 318, emoji: '🥥', c: ['#92400e', '#fbbf24'], desc: 'Cold-pressed virgin coconut oil for cooking, hair and skin.', features: ['Cold pressed', 'No additives', '500 ml glass bottle', 'Multi-purpose use'] },
-    { id: 10, name: 'Dark Chocolate Collection', category: 'food', price: 1250, was: null, stock: 4, rating: 4.7, reviews: 129, emoji: '🍫', c: ['#7c2d12', '#be123c'], desc: 'Smooth 70% cocoa chocolate with notes of cinnamon, ginger and sea salt.', features: ['70% cocoa', '4 flavours', 'Ethically sourced cocoa', '200 g'] },
-    ...EXTRA_PRODUCTS.map((p, i) => ({ id: i + 11, ...p, photo: `product-${i + 11}-still.jpg` }))
+    { id: 10, name: 'Dark Chocolate Collection', category: 'food', price: 1250, was: null, stock: 4, rating: 4.7, reviews: 129, emoji: '🍫', c: ['#7c2d12', '#be123c'], desc: 'Smooth 70% cocoa chocolate with notes of cinnamon, ginger and sea salt.', features: ['70% cocoa', '4 flavours', 'Ethically sourced cocoa', '200 g'] }
   ];
   PRODUCTS.forEach(p => {
     p.images = [
@@ -91,7 +46,27 @@
 
   /* ---------- state (persisted) ---------- */
   let stock = store.get(KEYS.stock, null);
-  if (!stock) { stock = {}; PRODUCTS.forEach(p => stock[p.id] = p.stock); store.set(KEYS.stock, stock); }
+  if (!stock) {
+    stock = {};
+    PRODUCTS.forEach(p => stock[p.id] = p.stock);
+    store.set(KEYS.stock, stock);
+  } else {
+    const validIds = new Set(PRODUCTS.map(p => String(p.id)));
+    let changed = false;
+    Object.keys(stock).forEach(id => {
+      if (!validIds.has(String(id))) {
+        delete stock[id];
+        changed = true;
+      }
+    });
+    PRODUCTS.forEach(p => {
+      if (stock[p.id] === undefined) {
+        stock[p.id] = p.stock;
+        changed = true;
+      }
+    });
+    if (changed) store.set(KEYS.stock, stock);
+  }
   /* signed-in shoppers get their own basket, wishlist and orders; guests keep using the plain keys */
   const readSession = () => {
     let s = null;
@@ -101,7 +76,7 @@
   let session = readSession();
   const ukey = n => KEYS[n] + (session ? '_' + session.uid : '');
   let cart = store.get(ukey('cart'), {});
-  let wish = store.get(ukey('wish'), []);
+  let wish = store.get(ukey('wish'), []).filter(id => byId(id));
   let orders = store.get(ukey('orders'), []);
   let promo = store.get(ukey('promo'), null);
   let prefs = store.get(KEYS.prefs, { theme: 'light', size: 100, motion: false });
@@ -119,7 +94,7 @@
   function sanitizeCart() { Object.keys(cart).forEach(id => { if (!byId(id) || getStock(id) < 1) delete cart[id]; else cart[id] = Math.min(cart[id], getStock(id)); }); }
   sanitizeCart();
   function loadScope() {
-    cart = store.get(ukey('cart'), {}); wish = store.get(ukey('wish'), []);
+    cart = store.get(ukey('cart'), {}); wish = store.get(ukey('wish'), []).filter(id => byId(id));
     orders = store.get(ukey('orders'), []); promo = store.get(ukey('promo'), null);
     sanitizeCart();
   }
