@@ -220,6 +220,116 @@ window.ShopWaveFirebase = {
     return snap.exists && snap.data().wishlist ? snap.data().wishlist : null;
   },
 
+  // ---- Admin & All Orders Database ----
+  async getAllOrders() {
+    if (!this.isReady()) return [];
+    try {
+      const snap = await fbDb.collection('orders')
+        .orderBy('createdAt', 'desc')
+        .get();
+      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (err) {
+      // Fallback if composite index or createdAt missing
+      const snap = await fbDb.collection('orders').get();
+      const list = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      list.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+      return list;
+    }
+  },
+
+  async updateOrderStatus(orderId, newStatus) {
+    if (!this.isReady()) return false;
+    const docRef = fbDb.collection('orders').doc(orderId);
+    const snap = await docRef.get();
+    if (!snap.exists) return false;
+
+    const data = snap.data();
+    await docRef.update({
+      status: newStatus,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    // Also update in user subcollection if order has uid
+    if (data.uid) {
+      try {
+        await fbDb.collection('users').doc(data.uid).collection('orders').doc(orderId).update({
+          status: newStatus,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      } catch (e) { /* ignore if subcollection doesn't exist */ }
+    }
+
+    return true;
+  },
+
+  async updateOrder(orderId, updateData) {
+    if (!this.isReady()) return false;
+    const cleanData = {
+      ...updateData,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    await fbDb.collection('orders').doc(orderId).set(cleanData, { merge: true });
+    return true;
+  },
+
+  async deleteOrder(orderId) {
+    if (!this.isReady()) return false;
+    await fbDb.collection('orders').doc(orderId).delete();
+    return true;
+  },
+
+  // ---- Products Cloud Database ----
+  async getAllProducts() {
+    if (!this.isReady()) return [];
+    try {
+      const snap = await fbDb.collection('products').get();
+      if (snap.empty) return [];
+      const list = snap.docs.map(doc => ({ id: Number(doc.id), ...doc.data() }));
+      list.sort((a, b) => a.id - b.id);
+      return list;
+    } catch (err) {
+      console.warn('Could not fetch Firestore products:', err);
+      return [];
+    }
+  },
+
+  async saveProduct(product) {
+    if (!this.isReady()) return false;
+    const pId = String(product.id);
+    const docData = {
+      ...product,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    };
+    await fbDb.collection('products').doc(pId).set(docData, { merge: true });
+    return true;
+  },
+
+  async deleteProduct(productId) {
+    if (!this.isReady()) return false;
+    await fbDb.collection('products').doc(String(productId)).delete();
+    return true;
+  },
+
+  async seedInitialProducts(products) {
+    if (!this.isReady()) return;
+    try {
+      const snap = await fbDb.collection('products').limit(1).get();
+      if (!snap.empty) return; // already seeded
+      const batch = fbDb.batch();
+      products.forEach(p => {
+        const ref = fbDb.collection('products').doc(String(p.id));
+        batch.set(ref, {
+          ...p,
+          createdAt: firebase.firestore.FieldValue.serverTimestamp()
+        });
+      });
+      await batch.commit();
+      console.log('✅ Initial products successfully seeded into Cloud Firestore!');
+    } catch (err) {
+      console.warn('Could not seed initial products to Firestore:', err);
+    }
+  },
+
   // ---- Newsletter Database ----
   async saveNewsletter(email) {
     if (!this.isReady() || !email) return;
@@ -230,3 +340,4 @@ window.ShopWaveFirebase = {
     }, { merge: true });
   }
 };
+

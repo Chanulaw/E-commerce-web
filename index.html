@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
     rel="stylesheet">
   <link rel="icon" type="image/png" href="shopwave-cart-icon-clean.png">
-  <link rel="stylesheet" href="styles.css?v=2.1">
+  <link rel="stylesheet" href="styles.css?v=3.0">
 </head>
 
 <body>
@@ -112,6 +112,14 @@
           <span class="hbtn-text">Orders</span>
         </button>
 
+        <button class="hbtn hbtn-admin" id="adminNavBtn" aria-label="Admin Portal" title="Admin Management Console">
+          <svg class="hbtn-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          <span class="hbtn-text">Admin</span>
+        </button>
+
         <div class="user-wrap">
           <button class="hbtn" id="authBtn" aria-label="Sign in or create an account" aria-haspopup="dialog"
             aria-expanded="false" aria-controls="userMenu">
@@ -119,6 +127,7 @@
           </button>
           <div class="user-menu" id="userMenu" hidden>
             <div class="um-head"><strong id="menuName"></strong><span id="menuEmail"></span></div>
+            <button type="button" id="menuAdmin"><span aria-hidden="true">⚡</span> Admin Dashboard</button>
             <button type="button" id="menuAccount"><span aria-hidden="true">⚙️</span> My account</button>
             <button type="button" id="menuOrders"><span aria-hidden="true">📦</span> My orders</button>
             <button type="button" id="menuSignOut"><span aria-hidden="true">↪️</span> Sign out</button>
@@ -458,6 +467,19 @@
                 <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"></path>
               </svg>
               <span class="foot-link-text">Shopping Basket</span>
+              <svg class="foot-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </li>
+          <li>
+            <button type="button" class="foot-link" id="footAdmin">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+              <span class="foot-link-text">Admin Portal</span>
               <svg class="foot-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                 <polyline points="9 18 15 12 9 6"></polyline>
@@ -1199,6 +1221,307 @@
     </div>
   </div>
 
+  <!-- ==================== ADMIN LOGIN MODAL ==================== -->
+  <div class="overlay" id="adminLoginOverlay" role="dialog" aria-modal="true" aria-labelledby="adminLoginTitle" hidden>
+    <div class="modal admin-login-modal">
+      <button class="icon-btn modal-close" data-close aria-label="Close admin login">✕</button>
+      <div class="auth-header">
+        <div class="auth-badge-pill admin-badge-pill">
+          <span class="auth-badge-pulse" aria-hidden="true"></span>
+          <span>ShopWave Administrator</span>
+        </div>
+        <div class="admin-shield-icon" aria-hidden="true">🛡️</div>
+        <h2 id="adminLoginTitle" class="auth-title">Admin Management Sign In</h2>
+        <p class="muted auth-subtitle">Secure portal to manage products, prices, stock and process orders.</p>
+      </div>
+
+      <div class="admin-demo-card">
+        <div class="demo-tag">Default Admin Credentials</div>
+        <div class="demo-creds">
+          <span>Email: <code>admin@shopwave.lk</code></span>
+          <span>Password: <code>Admin@1234</code></span>
+        </div>
+        <button type="button" class="btn btn-outline btn-sm" id="adminQuickFill">⚡ Auto-fill Admin</button>
+      </div>
+
+      <form id="adminLoginForm" novalidate>
+        <div class="field">
+          <label for="adminEmail">Admin Email</label>
+          <input id="adminEmail" type="email" placeholder="admin@shopwave.lk" required autocomplete="username">
+          <p class="error" id="err-adminEmail"></p>
+        </div>
+        <div class="field">
+          <label for="adminPassword">Admin Password</label>
+          <input id="adminPassword" type="password" placeholder="••••••••" required autocomplete="current-password">
+          <p class="error" id="err-adminPassword"></p>
+        </div>
+        <p class="error" id="adminLoginErr"></p>
+        <div class="step-actions">
+          <button type="button" class="btn btn-secondary" data-close>Cancel</button>
+          <button type="submit" class="btn btn-primary" id="adminLoginSubmit">⚡ Enter Admin Dashboard</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== ADMIN MAIN DASHBOARD MODAL ==================== -->
+  <div class="overlay" id="adminOverlay" role="dialog" aria-modal="true" aria-labelledby="adminDashTitle" hidden>
+    <div class="modal modal-wide modal-admin">
+      <button class="icon-btn modal-close" data-close aria-label="Close admin dashboard">✕</button>
+
+      <!-- Dashboard Header -->
+      <div class="admin-dash-header">
+        <div class="admin-title-wrap">
+          <div class="admin-badge-pill">
+            <span class="auth-badge-pulse" aria-hidden="true"></span>
+            <span id="adminCloudStatus">Cloud Firebase Live Sync Active</span>
+          </div>
+          <h2 id="adminDashTitle">ShopWave Administration Console</h2>
+          <p class="muted small">Real-time store management: update order statuses, manage catalog pricing, and maintain stock.</p>
+        </div>
+        <div class="admin-header-actions">
+          <span class="admin-user-pill" id="adminUserPill">👤 admin@shopwave.lk</span>
+          <button type="button" class="btn btn-sm btn-secondary" id="adminRefreshBtn" title="Reload live data from Firestore">🔄 Refresh Cloud</button>
+          <button type="button" class="btn btn-sm btn-danger" id="adminSignOutBtn">Sign Out</button>
+        </div>
+      </div>
+
+      <!-- Navigation Tabs -->
+      <div class="admin-tabs" role="tablist" aria-label="Admin navigation tabs">
+        <button type="button" role="tab" class="admin-tab active" id="tabAdminOverview" aria-selected="true" data-admin-panel="overview">
+          📊 <span>Overview</span>
+        </button>
+        <button type="button" role="tab" class="admin-tab" id="tabAdminOrders" aria-selected="false" data-admin-panel="orders">
+          📦 <span>Orders (<span id="adminOrdersBadge">0</span>)</span>
+        </button>
+        <button type="button" role="tab" class="admin-tab" id="tabAdminProducts" aria-selected="false" data-admin-panel="products">
+          🏷️ <span>Products (<span id="adminProductsBadge">10</span>)</span>
+        </button>
+        <button type="button" role="tab" class="admin-tab" id="tabAdminCustomers" aria-selected="false" data-admin-panel="customers">
+          👥 <span>Customers &amp; News</span>
+        </button>
+      </div>
+
+      <!-- TAB 1: OVERVIEW -->
+      <section class="admin-panel active" id="adminPanelOverview" role="tabpanel" aria-labelledby="tabAdminOverview">
+        <div class="admin-stats-grid">
+          <div class="admin-stat-card">
+            <div class="stat-icon icon-revenue" aria-hidden="true">💰</div>
+            <div class="stat-content">
+              <span class="stat-label">Total Revenue</span>
+              <strong class="stat-val" id="adminStatRevenue">Rs. 0</strong>
+            </div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="stat-icon icon-orders" aria-hidden="true">📦</div>
+            <div class="stat-content">
+              <span class="stat-label">Total Orders</span>
+              <strong class="stat-val" id="adminStatOrders">0</strong>
+            </div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="stat-icon icon-processing" aria-hidden="true">⏳</div>
+            <div class="stat-content">
+              <span class="stat-label">Pending / Processing</span>
+              <strong class="stat-val" id="adminStatProcessing">0</strong>
+            </div>
+          </div>
+          <div class="admin-stat-card">
+            <div class="stat-icon icon-products" aria-hidden="true">🏷️</div>
+            <div class="stat-content">
+              <span class="stat-label">Active Products</span>
+              <strong class="stat-val" id="adminStatProducts">10</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-overview-sections">
+          <div class="admin-box">
+            <div class="admin-box-head">
+              <h3>Latest Customer Orders</h3>
+              <button type="button" class="btn btn-sm btn-outline" id="adminGoOrdersBtn">Go to Orders Manager →</button>
+            </div>
+            <div class="admin-recent-orders-list" id="adminRecentOrdersList">
+              <p class="muted">Loading latest orders…</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: ORDERS MANAGEMENT -->
+      <section class="admin-panel" id="adminPanelOrders" role="tabpanel" aria-labelledby="tabAdminOrders" hidden>
+        <div class="admin-toolbar">
+          <div class="admin-search-wrap">
+            <span class="admin-search-icon" aria-hidden="true">🔍</span>
+            <input type="search" id="adminOrderSearch" placeholder="Search orders by ID, name, email, city…">
+          </div>
+          <div class="admin-filter-pills" id="adminOrderFilterPills">
+            <button type="button" class="chip active" data-order-status="all">All</button>
+            <button type="button" class="chip" data-order-status="Processing">Processing</button>
+            <button type="button" class="chip" data-order-status="Shipped">Shipped</button>
+            <button type="button" class="chip" data-order-status="Delivered">Delivered</button>
+            <button type="button" class="chip" data-order-status="Cancelled">Cancelled</button>
+          </div>
+        </div>
+
+        <div class="admin-orders-container" id="adminOrdersList">
+          <p class="muted">Loading orders…</p>
+        </div>
+      </section>
+
+      <!-- TAB 3: PRODUCTS MANAGEMENT -->
+      <section class="admin-panel" id="adminPanelProducts" role="tabpanel" aria-labelledby="tabAdminProducts" hidden>
+        <div class="admin-toolbar">
+          <div class="admin-search-wrap">
+            <span class="admin-search-icon" aria-hidden="true">🔍</span>
+            <input type="search" id="adminProductSearch" placeholder="Search products by title, category, description…">
+          </div>
+          <select id="adminProductCatFilter" class="admin-select" aria-label="Filter by category">
+            <option value="all">All Categories</option>
+            <option value="electronics">Electronics</option>
+            <option value="clothing">Clothing</option>
+            <option value="food">Food &amp; Drink</option>
+          </select>
+          <button type="button" class="btn btn-primary" id="adminAddProductBtn">
+            ➕ Add Product
+          </button>
+        </div>
+
+        <div class="admin-products-container" id="adminProductsList">
+          <p class="muted">Loading catalog products…</p>
+        </div>
+      </section>
+
+      <!-- TAB 4: CUSTOMERS & NEWSLETTER -->
+      <section class="admin-panel" id="adminPanelCustomers" role="tabpanel" aria-labelledby="tabAdminCustomers" hidden>
+        <div class="admin-two-cols">
+          <div class="admin-col-box">
+            <div class="admin-box-head">
+              <h3>Registered Shoppers</h3>
+              <span class="badge" id="adminUsersCount">0</span>
+            </div>
+            <div id="adminCustomersList" class="admin-list-box"></div>
+          </div>
+          <div class="admin-col-box">
+            <div class="admin-box-head">
+              <h3>Newsletter Subscribers</h3>
+              <span class="badge" id="adminNewsCount">0</span>
+            </div>
+            <div id="adminNewsList" class="admin-list-box"></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ==================== ADMIN ADD / EDIT PRODUCT MODAL ==================== -->
+  <div class="overlay" id="adminProductModal" role="dialog" aria-modal="true" aria-labelledby="apmTitle" hidden>
+    <div class="modal admin-product-dialog">
+      <button class="icon-btn modal-close" data-close aria-label="Close product editor">✕</button>
+      <div class="apm-header">
+        <h2 id="apmTitle">Add New Product</h2>
+        <p class="muted small" id="apmSubtitle">Enter product information to sync with catalog and Cloud Firestore.</p>
+      </div>
+
+      <form id="adminProductForm" novalidate>
+        <input type="hidden" id="apmId">
+        <div class="form-grid">
+          <div class="field span2">
+            <label for="apmName">Product Title *</label>
+            <input id="apmName" required placeholder="e.g. Wireless Pro Earbuds">
+            <p class="error" id="err-apmName"></p>
+          </div>
+          <div class="field">
+            <label for="apmCategory">Category *</label>
+            <select id="apmCategory" required>
+              <option value="electronics">Electronics</option>
+              <option value="clothing">Clothing</option>
+              <option value="food">Food &amp; Drink</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="apmStock">Current Stock Units *</label>
+            <input id="apmStock" type="number" min="0" value="10" required>
+            <p class="error" id="err-apmStock"></p>
+          </div>
+          <div class="field">
+            <label for="apmPrice">Selling Price (Rs.) *</label>
+            <input id="apmPrice" type="number" min="1" step="10" placeholder="15000" required>
+            <p class="error" id="err-apmPrice"></p>
+          </div>
+          <div class="field">
+            <label for="apmWas">Original Price (Was Rs. - optional)</label>
+            <input id="apmWas" type="number" min="0" step="10" placeholder="e.g. 18000">
+          </div>
+          <div class="field">
+            <label for="apmEmoji">Icon Emoji *</label>
+            <input id="apmEmoji" value="🛍️" maxlength="4" placeholder="🛍️">
+          </div>
+          <div class="field">
+            <label for="apmRating">Rating (1.0 - 5.0)</label>
+            <input id="apmRating" type="number" min="1" max="5" step="0.1" value="4.6">
+          </div>
+          <div class="field span2">
+            <label for="apmImg">Image URL or Local File Path</label>
+            <input id="apmImg" placeholder="product-1-still.jpg or https://images.unsplash.com/...">
+            <small class="muted">Enter local file (e.g. product-1-still.jpg) or full web image URL.</small>
+          </div>
+          <div class="field span2">
+            <label for="apmDesc">Product Description *</label>
+            <textarea id="apmDesc" rows="3" required placeholder="Brief description of the product..."></textarea>
+            <p class="error" id="err-apmDesc"></p>
+          </div>
+          <div class="field span2">
+            <label for="apmFeatures">Key Features (one per line)</label>
+            <textarea id="apmFeatures" rows="3" placeholder="High clarity sound&#10;Active noise cancelling&#10;24hr battery life"></textarea>
+          </div>
+        </div>
+        <div class="step-actions">
+          <button type="button" class="btn btn-secondary" data-close>Cancel</button>
+          <button type="submit" class="btn btn-primary" id="apmSubmitBtn">💾 Save to Cloud Firestore</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== ADMIN ORDER DETAILS MODAL ==================== -->
+  <div class="overlay" id="adminOrderDetailModal" role="dialog" aria-modal="true" aria-labelledby="aodTitle" hidden>
+    <div class="modal admin-order-dialog">
+      <button class="icon-btn modal-close" data-close aria-label="Close order details">✕</button>
+      <div class="aod-head">
+        <div>
+          <span class="badge" id="aodStatusBadge">Processing</span>
+          <span class="muted small" id="aodDate"></span>
+        </div>
+        <h2 id="aodTitle">Order Details</h2>
+      </div>
+
+      <div class="aod-body" id="aodBody">
+        <!-- Injected via JS -->
+      </div>
+
+      <div class="aod-actions">
+        <div class="aod-status-changer">
+          <label for="aodStatusSelect"><strong>Update Process / Status:</strong></label>
+          <div class="status-change-row">
+            <select id="aodStatusSelect" class="admin-select">
+              <option value="Processing">⏳ Processing</option>
+              <option value="Shipped">🚚 Shipped</option>
+              <option value="Delivered">✅ Delivered</option>
+              <option value="Cancelled">❌ Cancelled</option>
+            </select>
+            <button type="button" class="btn btn-primary btn-sm" id="aodSaveStatusBtn">Update Status</button>
+          </div>
+        </div>
+
+        <div class="aod-foot-btns">
+          <button type="button" class="btn btn-danger btn-sm" id="aodDeleteOrderBtn">🗑️ Delete Order</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-close>Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="toasts" id="toasts" aria-live="polite" aria-atomic="false"></div>
   <div class="sr-only" id="live" role="status" aria-live="polite"></div>
 
@@ -1207,7 +1530,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="app.js?v=2.1"></script>
+  <script src="app.js?v=3.0"></script>
 </body>
 
 </html>

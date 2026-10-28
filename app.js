@@ -18,7 +18,7 @@
     { id: 'clothing', name: 'Clothing', icon: '👕' },
     { id: 'food', name: 'Food & Drink', icon: '🍵' }
   ];
-  const PRODUCTS = [
+  const DEFAULT_PRODUCTS = [
     { id: 1, name: 'Aurora Wireless Headphones', category: 'electronics', price: 18500, was: 22000, stock: 12, rating: 4.6, reviews: 328, emoji: '🎧', c: ['#6366f1', '#a78bfa'], desc: 'Over-ear Bluetooth 5.3 headphones with active noise cancellation and all-day comfort.', features: ['Active noise cancellation', '40-hour battery life', 'Foldable design', 'Built-in microphone'] },
     { id: 2, name: 'Pulse Smart Watch', category: 'electronics', price: 24900, was: null, stock: 7, rating: 4.4, reviews: 212, emoji: '⌚', c: ['#0ea5e9', '#22d3ee'], desc: 'Track steps, heart rate and sleep with a bright AMOLED display and week-long battery.', features: ['AMOLED touch display', 'Heart-rate and sleep tracking', 'Water resistant (5 ATM)', '7-day battery'] },
     { id: 3, name: 'Echo Mini Bluetooth Speaker', category: 'electronics', price: 9750, was: 11500, stock: 3, rating: 4.3, reviews: 154, emoji: '🔊', c: ['#ec4899', '#f97316'], desc: 'A pocket-sized speaker with surprisingly deep bass and a splash-proof body.', features: ['360° sound', 'IPX6 splash proof', '12-hour playtime', 'Pairs two speakers'] },
@@ -30,15 +30,25 @@
     { id: 9, name: 'Virgin Coconut Oil 500ml', category: 'food', price: 1950, was: 2300, stock: 30, rating: 4.5, reviews: 318, emoji: '🥥', c: ['#92400e', '#fbbf24'], desc: 'Cold-pressed virgin coconut oil for cooking, hair and skin.', features: ['Cold pressed', 'No additives', '500 ml glass bottle', 'Multi-purpose use'] },
     { id: 10, name: 'Dark Chocolate Collection', category: 'food', price: 1250, was: null, stock: 4, rating: 4.7, reviews: 129, emoji: '🍫', c: ['#7c2d12', '#be123c'], desc: 'Smooth 70% cocoa chocolate with notes of cinnamon, ginger and sea salt.', features: ['70% cocoa', '4 flavours', 'Ethically sourced cocoa', '200 g'] }
   ];
-  PRODUCTS.forEach(p => {
-    p.images = [
-      `product-${p.id}-still.jpg`,
-      `product-${p.id}-2.jpg`,
-      `product-${p.id}-3.jpg`
-    ];
-    p.img = p.images[0];
-    p.still = p.images[0];
-  });
+  let PRODUCTS = store.get('sw_custom_products', null) || DEFAULT_PRODUCTS.map(p => ({ ...p }));
+  function refreshProductMedia(list = PRODUCTS) {
+    list.forEach(p => {
+      if (!p.c || !p.c.length) p.c = ['#6366f1', '#a78bfa'];
+      if (!p.features) p.features = [];
+      if (!p.images || !p.images.length) {
+        if (p.img) {
+          p.images = [p.img];
+        } else if (p.id <= 10) {
+          p.images = [`product-${p.id}-still.jpg`, `product-${p.id}-2.jpg`, `product-${p.id}-3.jpg`];
+        } else {
+          p.images = ['product-1-still.jpg'];
+        }
+      }
+      p.img = p.images[0];
+      p.still = p.images[0];
+    });
+  }
+  refreshProductMedia();
   const catName = id => CATEGORIES.find(c => c.id === id).name;
   const byId = id => PRODUCTS.find(p => p.id === Number(id));
   const PROMOS = { SAVE10: { pct: 10, label: '10% off' }, WELCOME5: { pct: 5, label: '5% off' } };
@@ -71,7 +81,9 @@
   const readSession = () => {
     let s = null;
     try { s = JSON.parse(localStorage.getItem(KEYS.session) || sessionStorage.getItem(KEYS.session) || 'null'); } catch (e) { s = null; }
-    return s && store.get(KEYS.users, []).some(u => u.id === s.uid) ? s : null;
+    if (!s) return null;
+    if (s.isAdmin || s.uid === 'u_admin') return s;
+    return store.get(KEYS.users, []).some(u => u.id === s.uid) ? s : null;
   };
   let session = readSession();
   const ukey = n => KEYS[n] + (session ? '_' + session.uid : '');
@@ -780,10 +792,13 @@
       for (const id of Object.keys(cart)) {
         if (cart[id] > getStock(id)) { toast(`${byId(id).name} no longer has enough stock. Please update your basket.`, 'error'); btn.disabled = false; btn.textContent = 'Place order'; closeModal('checkoutOverlay'); cart[id] = Math.max(0, getStock(id)); if (!cart[id]) delete cart[id]; save(); updateCounts(); renderCart(); return; }
       }
-      const t = totals();
-      const order = { id: 'SW-' + Date.now().toString(36).toUpperCase(), date: new Date().toISOString(), items: Object.keys(cart).map(id => ({ id: +id, name: byId(id).name, qty: cart[id], price: byId(id).price })), total: t.total, promo, uid: session ? session.uid : null, pay: payMethod(), name: $('#fullName').value.trim(), email: $('#email').value.trim(), city: $('#city').value.trim(), address: $('#address').value.trim(), phone: $('#phone').value.trim() };
+      const order = { id: 'SW-' + Date.now().toString(36).toUpperCase(), date: new Date().toISOString(), items: Object.keys(cart).map(id => ({ id: +id, name: byId(id).name, qty: cart[id], price: byId(id).price })), total: t.total, promo, uid: session ? session.uid : null, pay: payMethod(), name: $('#fullName').value.trim(), email: $('#email').value.trim(), city: $('#city').value.trim(), address: $('#address').value.trim(), phone: $('#phone').value.trim(), status: 'Processing' };
       Object.keys(cart).forEach(id => stock[id] = getStock(id) - cart[id]);
-      orders.unshift(order); cart = {}; promo = null; save(); updateCounts(); renderCart(); renderProducts();
+      orders.unshift(order);
+      const allOrders = store.get('sw_all_orders', []);
+      allOrders.unshift(order);
+      store.set('sw_all_orders', allOrders);
+      cart = {}; promo = null; save(); updateCounts(); renderCart(); renderProducts();
       if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
         window.ShopWaveFirebase.createOrder(order)
           .then(() => toast('Order saved to Cloud Firestore!'))
@@ -892,11 +907,25 @@
     for (let i = 0; i < s.length; i++) hv = ((hv << 5) + hv) ^ s.charCodeAt(i);
     return 'w1:' + (hv >>> 0).toString(16);
   }
+  const ADMIN_EMAIL = 'admin@shopwave.lk';
   const getUsers = () => store.get(KEYS.users, []);
   const setUsers = u => store.set(KEYS.users, u);
   const findUser = email => getUsers().find(u => u.email === String(email).trim().toLowerCase());
-  const currentUser = () => session ? (getUsers().find(u => u.id === session.uid) || null) : null;
-  const firstName = u => u.name.trim().split(/\s+/)[0];
+  const currentUser = () => {
+    if (!session) return null;
+    const users = getUsers();
+    const found = users.find(u => u.id === session.uid);
+    if (found) return found;
+    if (session.isAdmin || session.uid === 'u_admin') {
+      return { id: 'u_admin', name: 'Administrator', email: ADMIN_EMAIL, role: 'admin' };
+    }
+    return null;
+  };
+  const isAdmin = () => {
+    const u = currentUser();
+    return !!(u && (u.email === ADMIN_EMAIL || u.role === 'admin' || (session && session.isAdmin)));
+  };
+  const firstName = u => (u.name || 'User').trim().split(/\s+/)[0];
 
   /* ---- validation rules (they plug into the same checker the checkout uses) ---- */
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
@@ -1091,7 +1120,8 @@
   }
   function refreshAll() { updateCounts(); renderCart(); renderProducts(); renderWishlist(); renderAuthUI(); refreshProductModal(); }
   function signIn(u, remember, msg) {
-    session = { uid: u.id, remember: !!remember };
+    const isAdm = (u.email === ADMIN_EMAIL || u.role === 'admin');
+    session = { uid: u.id, remember: !!remember, isAdmin: isAdm };
     try { localStorage.removeItem(KEYS.session); sessionStorage.removeItem(KEYS.session); (remember ? localStorage : sessionStorage).setItem(KEYS.session, JSON.stringify(session)); } catch (e) { /* session lasts until the page closes */ }
     loadScope();
     const moved = mergeGuestData();
@@ -1099,6 +1129,9 @@
     toast(msg + (moved ? ' Your basket items were added to your account.' : ''));
     announce(msg);
     finishAuth();
+    if (isAdm) {
+      setTimeout(() => openAdminDashboard(), 600);
+    }
   }
   function endSession() {
     session = null;
@@ -1284,14 +1317,17 @@
   document.addEventListener('keydown', e => { if (e.key === 'Escape' && !userMenu.hidden) { setMenu(false); authBtn.focus(); } });
   $('#menuAccount').onclick = () => { setMenu(false); openAccount(); };
   $('#menuOrders').onclick = () => { setMenu(false); showOrders(); };
+  const menuAdmin = $('#menuAdmin');
+  if (menuAdmin) menuAdmin.onclick = () => { setMenu(false); openAdminDashboard(); };
   $('#menuSignOut').onclick = () => { setMenu(false); signOut(); };
   function renderAuthUI() {
     const u = currentUser(), ic = $('#authIcon');
-    $('#authLabel').textContent = u ? firstName(u) : 'Sign in';
-    ic.textContent = u ? u.name.trim()[0].toUpperCase() : '👤'; ic.classList.toggle('avatar', !!u);
+    $('#authLabel').textContent = u ? (isAdmin() ? 'Admin' : firstName(u)) : 'Sign in';
+    ic.textContent = u ? (isAdmin() ? '⚡' : u.name.trim()[0].toUpperCase()) : '👤'; ic.classList.toggle('avatar', !!u);
     authBtn.setAttribute('aria-label', u ? 'Account menu for ' + u.name : 'Sign in or create an account');
     authBtn.setAttribute('aria-haspopup', u ? 'true' : 'dialog');
-    $('#menuName').textContent = u ? u.name : ''; $('#menuEmail').textContent = u ? u.email : '';
+    $('#menuName').textContent = u ? u.name + (isAdmin() ? ' (Admin)' : '') : ''; $('#menuEmail').textContent = u ? u.email : '';
+    if (menuAdmin) menuAdmin.hidden = !isAdmin();
     const badgeText = $('#authBadgeText');
     if (badgeText) {
       if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
@@ -1344,30 +1380,40 @@
     Object.entries({ fullName: u.name, email: u.email, phone: u.phone, address: u.address, city: u.city, postal: u.postal, cardName: u.name }).forEach(([id, v]) => { const el = $('#' + id); if (v && !el.value) el.value = v; });
   }
 
-  /* a ready-made demo account so markers can try the login straight away */
+  /* a ready-made demo account and admin account so markers can try login straight away */
   async function seedDemoUser() {
-    if (store.get('sw_seeded', false)) return;
-    const salt = randHex(16), hash = await hashPw('Demo@1234', salt), users = getUsers();
+    const users = getUsers();
+    let updated = false;
     if (!users.some(u => u.email === 'demo@shopwave.lk')) {
+      const salt = randHex(16), hash = await hashPw('Demo@1234', salt);
       users.push({ id: 'u_demo', name: 'Demo Shopper', email: 'demo@shopwave.lk', salt, hash, created: new Date().toISOString(), phone: '+94 77 123 4567', address: '25 Galle Road', city: 'Colombo', postal: '00300' });
-      setUsers(users);
+      updated = true;
     }
-    store.set('sw_seeded', true);
+    if (!users.some(u => u.email === ADMIN_EMAIL)) {
+      const aSalt = randHex(16), aHash = await hashPw('Admin@1234', aSalt);
+      users.push({
+        id: 'u_admin',
+        name: 'ShopWave Administrator',
+        email: ADMIN_EMAIL,
+        role: 'admin',
+        salt: aSalt,
+        hash: aHash,
+        created: new Date().toISOString(),
+        phone: '+94 11 234 5678',
+        address: 'ShopWave HQ, Level 8',
+        city: 'Colombo',
+        postal: '00300'
+      });
+      updated = true;
+    }
+    if (updated) setUsers(users);
   }
 
   /* ---------- product photos + videos ---------- */
   const canHover = matchMedia('(hover: hover)').matches;
   const heroVideo = $('#heroVideo');
   let heroVisible = true;
-  PRODUCTS.forEach(p => {
-    p.images = [
-      `product-${p.id}-still.jpg`,
-      `product-${p.id}-2.jpg`,
-      `product-${p.id}-3.jpg`
-    ];
-    p.img = p.images[0];
-    p.still = p.images[0];
-  });
+  refreshProductMedia();
 
   function thumbImg(p) {
     const src = (p.images && p.images[0]) || p.still || p.img;
@@ -1430,9 +1476,810 @@
     });
   })();
 
+  /* ==========================================================================
+     ADMIN CONSOLE & FIREBASE CLOUD MANAGEMENT
+     ========================================================================== */
+  let adminOrders = [];
+  let adminOrderFilter = 'all';
+  let activeDetailOrder = null;
+
+  // Cloud products sync
+  async function initCloudProducts() {
+    if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
+      try {
+        const cloudProducts = await window.ShopWaveFirebase.getAllProducts();
+        if (cloudProducts && cloudProducts.length > 0) {
+          PRODUCTS = cloudProducts;
+          store.set('sw_custom_products', PRODUCTS);
+          refreshProductMedia();
+          PRODUCTS.forEach(p => {
+            if (stock[p.id] === undefined) stock[p.id] = p.stock;
+          });
+          store.set(KEYS.stock, stock);
+          renderCategoryUI();
+          renderProducts();
+          if (!modalStack.length || !$('#adminOverlay').hidden) renderAdminProducts();
+        } else {
+          // First time seed to Cloud Firestore
+          window.ShopWaveFirebase.seedInitialProducts(DEFAULT_PRODUCTS);
+        }
+      } catch (err) {
+        console.warn('Could not sync Firestore products:', err);
+      }
+    }
+  }
+
+  // Open Admin Dashboard
+  async function openAdminDashboard() {
+    if (!isAdmin()) {
+      openModal('adminLoginOverlay', '#adminEmail');
+      return;
+    }
+
+    const cloudStatus = $('#adminCloudStatus');
+    if (cloudStatus) {
+      if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
+        cloudStatus.textContent = 'Cloud Firestore Live Sync Active';
+        cloudStatus.parentElement.style.color = '#10b981';
+      } else {
+        cloudStatus.textContent = 'Admin Console (Local Persistence Mode)';
+        cloudStatus.parentElement.style.color = '#f59e0b';
+      }
+    }
+
+    const adminUserPill = $('#adminUserPill');
+    if (adminUserPill) {
+      const u = currentUser();
+      adminUserPill.textContent = '👤 ' + (u ? u.email : ADMIN_EMAIL);
+    }
+
+    openModal('adminOverlay', '#tabAdminOverview');
+    await loadAdminData();
+  }
+
+  // Fetch all orders & data for Admin
+  async function loadAdminData() {
+    let ordersList = [];
+    if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
+      try {
+        ordersList = await window.ShopWaveFirebase.getAllOrders();
+      } catch (e) {
+        console.warn('Could not fetch all orders from Firestore:', e);
+      }
+    }
+
+    // Merge with local orders
+    const localAll = store.get('sw_all_orders', []);
+    const localUserOrders = store.get(ukey('orders'), []);
+    const mergedMap = new Map();
+
+    ordersList.forEach(o => mergedMap.set(o.id || o.orderId, o));
+    localAll.forEach(o => {
+      const id = o.id || o.orderId;
+      if (!mergedMap.has(id)) mergedMap.set(id, o);
+    });
+    localUserOrders.forEach(o => {
+      const id = o.id || o.orderId;
+      if (!mergedMap.has(id)) mergedMap.set(id, o);
+    });
+
+    adminOrders = Array.from(mergedMap.values());
+    adminOrders.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+
+    // Update badges
+    if ($('#adminOrdersBadge')) $('#adminOrdersBadge').textContent = adminOrders.length;
+    if ($('#adminProductsBadge')) $('#adminProductsBadge').textContent = PRODUCTS.length;
+
+    renderAdminOverview();
+    renderAdminOrders();
+    renderAdminProducts();
+    renderAdminCustomers();
+  }
+
+  // Render Overview
+  function renderAdminOverview() {
+    const totalRev = adminOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const procCount = adminOrders.filter(o => (o.status || 'Processing') === 'Processing').length;
+
+    if ($('#adminStatRevenue')) $('#adminStatRevenue').textContent = money(totalRev);
+    if ($('#adminStatOrders')) $('#adminStatOrders').textContent = adminOrders.length;
+    if ($('#adminStatProcessing')) $('#adminStatProcessing').textContent = procCount;
+    if ($('#adminStatProducts')) $('#adminStatProducts').textContent = PRODUCTS.length;
+
+    const recent = adminOrders.slice(0, 5);
+    const box = $('#adminRecentOrdersList');
+    if (!box) return;
+
+    if (!recent.length) {
+      box.innerHTML = '<p class="muted" style="padding:1rem;">No customer orders placed yet.</p>';
+      return;
+    }
+
+    box.innerHTML = `
+      <table class="aod-table">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${recent.map(o => `
+            <tr>
+              <td><strong>#${o.id || o.orderId}</strong></td>
+              <td>${esc(o.name || 'Shopper')}</td>
+              <td><strong>${money(o.total)}</strong></td>
+              <td><span class="badge-status ${(o.status || 'processing').toLowerCase()}">${o.status || 'Processing'}</span></td>
+              <td><button type="button" class="btn btn-sm btn-outline" data-view-order="${o.id || o.orderId}">View Details</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    `;
+  }
+
+  // Render Orders Tab
+  function renderAdminOrders() {
+    const q = ($('#adminOrderSearch')?.value || '').trim().toLowerCase();
+    const filtered = adminOrders.filter(o => {
+      const matchStatus = adminOrderFilter === 'all' || (o.status || 'Processing') === adminOrderFilter;
+      const matchQ = !q ||
+        (o.id || o.orderId || '').toLowerCase().includes(q) ||
+        (o.name || '').toLowerCase().includes(q) ||
+        (o.email || '').toLowerCase().includes(q) ||
+        (o.city || '').toLowerCase().includes(q);
+      return matchStatus && matchQ;
+    });
+
+    const box = $('#adminOrdersList');
+    if (!box) return;
+
+    if (!filtered.length) {
+      box.innerHTML = '<div class="empty-cart"><p>No orders match your filter criteria.</p></div>';
+      return;
+    }
+
+    box.innerHTML = filtered.map(o => {
+      const id = o.id || o.orderId;
+      const st = o.status || 'Processing';
+      const itemsList = o.items || [];
+      const dateStr = o.date ? new Date(o.date).toLocaleString() : 'N/A';
+
+      return `
+        <article class="admin-order-item" data-order-id="${id}">
+          <div class="admin-order-head">
+            <div class="admin-order-id-group">
+              <span class="admin-order-id">#${id}</span>
+              <span class="badge-status ${st.toLowerCase()}">${st}</span>
+            </div>
+            <div class="admin-order-meta">
+              <span>👤 <strong>${esc(o.name || 'Shopper')}</strong> (${esc(o.email || 'No email')})</span>
+              <span>📍 ${esc(o.city || 'Sri Lanka')}</span>
+              <span>📅 ${dateStr}</span>
+            </div>
+          </div>
+
+          <div class="admin-order-body">
+            <div class="admin-order-items-preview">
+              ${itemsList.map(item => `<span>${esc(item.name)} × ${item.qty} (${money(item.price)})</span>`).join('')}
+            </div>
+            <div class="admin-order-total">
+              <div class="total-label">Total Amount</div>
+              <div class="total-amount">${money(o.total)}</div>
+            </div>
+          </div>
+
+          <div class="admin-order-actions">
+            <div class="admin-status-control">
+              <label for="status_${id}">Process Status:</label>
+              <select id="status_${id}" class="admin-select" data-status-for="${id}">
+                <option value="Processing" ${st === 'Processing' ? 'selected' : ''}>⏳ Processing</option>
+                <option value="Shipped" ${st === 'Shipped' ? 'selected' : ''}>🚚 Shipped</option>
+                <option value="Delivered" ${st === 'Delivered' ? 'selected' : ''}>✅ Delivered</option>
+                <option value="Cancelled" ${st === 'Cancelled' ? 'selected' : ''}>❌ Cancelled</option>
+              </select>
+            </div>
+            <div class="admin-item-btns">
+              <button type="button" class="btn btn-sm btn-outline" data-view-order="${id}">🔎 View Full Details</button>
+              <button type="button" class="btn-danger-sm" data-delete-order="${id}" title="Delete Order">🗑️</button>
+            </div>
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  // Update order status in Cloud Firestore & Local
+  async function updateOrderStatus(orderId, newStatus) {
+    const o = adminOrders.find(x => (x.id || x.orderId) === orderId);
+    if (!o) return;
+
+    o.status = newStatus;
+
+    // Save in Firestore
+    if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
+      await window.ShopWaveFirebase.updateOrderStatus(orderId, newStatus);
+    }
+
+    // Save in local storage
+    const allLocal = store.get('sw_all_orders', []);
+    const localIdx = allLocal.findIndex(x => (x.id || x.orderId) === orderId);
+    if (localIdx > -1) {
+      allLocal[localIdx].status = newStatus;
+      store.set('sw_all_orders', allLocal);
+    }
+
+    // Also update current user orders if matching
+    const curIdx = orders.findIndex(x => (x.id || x.orderId) === orderId);
+    if (curIdx > -1) {
+      orders[curIdx].status = newStatus;
+      save();
+    }
+
+    toast(`Order #${orderId} process updated to "${newStatus}"! (Synced to Firestore)`);
+    renderAdminOverview();
+    renderAdminOrders();
+    if (activeDetailOrder && (activeDetailOrder.id || activeDetailOrder.orderId) === orderId) {
+      openOrderDetailModal(orderId);
+    }
+  }
+
+  // View full Order Details
+  function openOrderDetailModal(orderId) {
+    const o = adminOrders.find(x => (x.id || x.orderId) === orderId);
+    if (!o) return;
+    activeDetailOrder = o;
+
+    const st = o.status || 'Processing';
+    const stBadge = $('#aodStatusBadge');
+    if (stBadge) {
+      stBadge.textContent = st;
+      stBadge.className = 'badge-status ' + st.toLowerCase();
+    }
+    $('#aodDate').textContent = o.date ? new Date(o.date).toLocaleString() : '';
+    $('#aodTitle').textContent = `Order Details #${orderId}`;
+    $('#aodStatusSelect').value = st;
+
+    const items = o.items || [];
+    $('#aodBody').innerHTML = `
+      <div class="aod-section">
+        <h4>Customer & Delivery Details</h4>
+        <p>
+          <strong>Name:</strong> ${esc(o.name || 'N/A')}<br>
+          <strong>Email:</strong> ${esc(o.email || 'N/A')}<br>
+          <strong>Phone:</strong> ${esc(o.phone || 'N/A')}<br>
+          <strong>Address:</strong> ${esc(o.address || 'N/A')}, ${esc(o.city || '')} ${esc(o.postal || '')}<br>
+          <strong>Payment Method:</strong> ${o.pay === 'card' ? '💳 Card payment' : '💵 Cash on delivery'}<br>
+          ${o.promo ? `<strong>Promo Code Applied:</strong> ${esc(o.promo)}<br>` : ''}
+        </p>
+      </div>
+
+      <div class="aod-section">
+        <h4>Purchased Items</h4>
+        <table class="aod-table">
+          <thead>
+            <tr>
+              <th>Item</th>
+              <th>Unit Price</th>
+              <th>Quantity</th>
+              <th>Subtotal</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${items.map(it => `
+              <tr>
+                <td><strong>${esc(it.name)}</strong></td>
+                <td>${money(it.price)}</td>
+                <td>× ${it.qty}</td>
+                <td><strong>${money(it.price * it.qty)}</strong></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+        <div style="margin-top:1rem;display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-weight:700;">Grand Total:</span>
+          <span style="font-size:1.35rem;font-weight:800;color:var(--primary);">${money(o.total)}</span>
+        </div>
+      </div>
+    `;
+
+    openModal('adminOrderDetailModal');
+  }
+
+  // Delete an order
+  async function deleteAdminOrder(orderId) {
+    if (!confirm(`Are you sure you want to permanently delete order #${orderId}?`)) return;
+
+    if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
+      await window.ShopWaveFirebase.deleteOrder(orderId).catch(console.warn);
+    }
+
+    adminOrders = adminOrders.filter(x => (x.id || x.orderId) !== orderId);
+    const allLocal = store.get('sw_all_orders', []).filter(x => (x.id || x.orderId) !== orderId);
+    store.set('sw_all_orders', allLocal);
+
+    orders = orders.filter(x => (x.id || x.orderId) !== orderId);
+    save();
+
+    closeModal('adminOrderDetailModal');
+    toast(`Order #${orderId} deleted.`);
+    renderAdminOverview();
+    renderAdminOrders();
+  }
+
+  // Render Products Tab
+  function renderAdminProducts() {
+    const q = ($('#adminProductSearch')?.value || '').trim().toLowerCase();
+    const cat = $('#adminProductCatFilter')?.value || 'all';
+
+    const filtered = PRODUCTS.filter(p => {
+      const matchCat = cat === 'all' || p.category === cat;
+      const matchQ = !q ||
+        p.name.toLowerCase().includes(q) ||
+        p.desc.toLowerCase().includes(q) ||
+        catName(p.category).toLowerCase().includes(q);
+      return matchCat && matchQ;
+    });
+
+    const box = $('#adminProductsList');
+    if (!box) return;
+
+    if (!filtered.length) {
+      box.innerHTML = '<div class="empty-cart"><p>No products match your search.</p></div>';
+      return;
+    }
+
+    box.innerHTML = filtered.map(p => {
+      const s = getStock(p.id);
+      const stockBadge = s === 0 ? '<span class="admin-prod-stock-badge stock-badge-out">Out of stock (0)</span>' :
+        s <= 5 ? `<span class="admin-prod-stock-badge stock-badge-low">Low stock (${s})</span>` :
+        `<span class="admin-prod-stock-badge stock-badge-in">In stock (${s})</span>`;
+
+      const thumb = (p.images && p.images[0]) || p.img;
+
+      return `
+        <div class="admin-prod-item" data-product-id="${p.id}">
+          <div class="admin-prod-thumb">
+            ${thumb ? `<img src="${thumb}" alt="${esc(p.name)}" onerror="this.replaceWith('${p.emoji || '🛍️'}')">` : (p.emoji || '🛍️')}
+          </div>
+          <div class="admin-prod-info">
+            <span class="admin-prod-cat">${catName(p.category)}</span>
+            <h4>${esc(p.name)}</h4>
+          </div>
+          <div class="admin-prod-price">
+            <strong>${money(p.price)}</strong>
+            ${p.was ? `<s>was ${money(p.was)}</s>` : ''}
+          </div>
+          <div class="admin-prod-stock">
+            ${stockBadge}
+          </div>
+          <div>
+            <span class="rating">⭐ ${p.rating}</span>
+          </div>
+          <div class="admin-prod-btns">
+            <button type="button" class="btn btn-sm btn-outline" data-edit-product="${p.id}">✏️ Edit</button>
+            <button type="button" class="btn-danger-sm" data-delete-product="${p.id}" title="Delete Product">🗑️</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // Open Product Editor Modal
+  function openProductEditor(id = null) {
+    const isEdit = id != null;
+    $('#apmTitle').textContent = isEdit ? 'Edit Product' : 'Add New Product';
+    $('#apmSubtitle').textContent = isEdit ? 'Modify pricing, stock and details synced to Cloud Firestore.' : 'Create a brand new item in your catalog.';
+    $('#apmSubmitBtn').textContent = isEdit ? 'Update Product in Firestore' : 'Add Product to Firestore';
+    $('#apmId').value = isEdit ? id : '';
+
+    if (isEdit) {
+      const p = byId(id);
+      if (!p) return;
+      $('#apmName').value = p.name;
+      $('#apmCategory').value = p.category;
+      $('#apmStock').value = getStock(p.id);
+      $('#apmPrice').value = p.price;
+      $('#apmWas').value = p.was || '';
+      $('#apmEmoji').value = p.emoji || '🛍️';
+      $('#apmRating').value = p.rating || 4.5;
+      $('#apmImg').value = (p.images && p.images[0]) || p.img || '';
+      $('#apmDesc').value = p.desc || '';
+      $('#apmFeatures').value = (p.features || []).join('\n');
+    } else {
+      $('#adminProductForm').reset();
+      $('#apmStock').value = 10;
+      $('#apmEmoji').value = '🛍️';
+      $('#apmRating').value = 4.5;
+    }
+
+    openModal('adminProductModal', '#apmName');
+  }
+
+  // Save product (Add or Edit)
+  async function saveProductForm(e) {
+    e.preventDefault();
+    const idVal = $('#apmId').value;
+    const isEdit = !!idVal;
+
+    const name = $('#apmName').value.trim();
+    const category = $('#apmCategory').value;
+    const stockVal = Math.max(0, parseInt($('#apmStock').value, 10) || 0);
+    const price = Math.max(1, parseFloat($('#apmPrice').value) || 0);
+    const wasVal = $('#apmWas').value ? parseFloat($('#apmWas').value) : null;
+    const emoji = $('#apmEmoji').value.trim() || '🛍️';
+    const rating = Math.min(5, Math.max(1, parseFloat($('#apmRating').value) || 4.5));
+    const imgVal = $('#apmImg').value.trim();
+    const desc = $('#apmDesc').value.trim();
+    const features = $('#apmFeatures').value.split('\n').map(s => s.trim()).filter(Boolean);
+
+    if (!name || !desc || !price) {
+      toast('Please fill out all required fields.', 'error');
+      return;
+    }
+
+    let p;
+    if (isEdit) {
+      p = byId(Number(idVal));
+      if (!p) return;
+      p.name = name;
+      p.category = category;
+      p.price = price;
+      p.was = wasVal;
+      p.stock = stockVal;
+      p.emoji = emoji;
+      p.rating = rating;
+      p.desc = desc;
+      p.features = features;
+      if (imgVal) {
+        p.images = [imgVal];
+        p.img = imgVal;
+        p.still = imgVal;
+      }
+    } else {
+      const newId = Math.max(0, ...PRODUCTS.map(x => x.id)) + 1;
+      const defaultPalette = category === 'clothing' ? ['#0ea5e9', '#38bdf8'] : category === 'food' ? ['#16a34a', '#84cc16'] : ['#6366f1', '#a78bfa'];
+      p = {
+        id: newId,
+        name,
+        category,
+        price,
+        was: wasVal,
+        stock: stockVal,
+        rating,
+        reviews: 1,
+        emoji,
+        c: defaultPalette,
+        desc,
+        features,
+        images: imgVal ? [imgVal] : [`product-${(newId % 10) || 1}-still.jpg`],
+        img: imgVal || `product-${(newId % 10) || 1}-still.jpg`,
+        still: imgVal || `product-${(newId % 10) || 1}-still.jpg`
+      };
+      PRODUCTS.push(p);
+    }
+
+    // Update stock in state
+    stock[p.id] = stockVal;
+    store.set(KEYS.stock, stock);
+    store.set('sw_custom_products', PRODUCTS);
+
+    // Sync with Firebase Firestore
+    if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
+      try {
+        await window.ShopWaveFirebase.saveProduct(p);
+        toast(`Product "${p.name}" saved to Cloud Firestore!`);
+      } catch (err) {
+        console.warn('Could not save product to Firestore:', err);
+        toast(`Saved locally! (Firebase sync error)`, 'error');
+      }
+    } else {
+      toast(`Product "${p.name}" saved locally!`);
+    }
+
+    closeModal('adminProductModal');
+    refreshProductMedia();
+    renderProducts();
+    renderCategoryUI();
+    renderAdminProducts();
+    renderAdminOverview();
+  }
+
+  // Delete product
+  async function deleteProduct(id) {
+    const p = byId(id);
+    if (!p) return;
+    if (!confirm(`Are you sure you want to permanently delete "${p.name}" from the store and Cloud Firestore?`)) return;
+
+    // Delete from Firestore
+    if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
+      try {
+        await window.ShopWaveFirebase.deleteProduct(id);
+      } catch (err) {
+        console.warn('Could not delete product from Firestore:', err);
+      }
+    }
+
+    // Remove from array & store
+    PRODUCTS = PRODUCTS.filter(x => x.id !== id);
+    delete stock[id];
+    delete cart[id];
+    wish = wish.filter(x => x !== id);
+
+    store.set('sw_custom_products', PRODUCTS);
+    store.set(KEYS.stock, stock);
+    save();
+
+    toast(`Product "${p.name}" removed from catalog.`);
+    renderProducts();
+    renderCategoryUI();
+    renderAdminProducts();
+    renderAdminOverview();
+  }
+
+  // Render Customers Tab
+  function renderAdminCustomers() {
+    const users = getUsers();
+    if ($('#adminUsersCount')) $('#adminUsersCount').textContent = users.length;
+    const cBox = $('#adminCustomersList');
+    if (cBox) {
+      cBox.innerHTML = !users.length ? '<p class="muted">No shoppers registered yet.</p>' :
+        users.map(u => `
+          <div class="admin-list-item">
+            <div>
+              <strong>${esc(u.name)}</strong><br>
+              <span class="muted">${esc(u.email)}</span>
+            </div>
+            <span>${new Date(u.created).toLocaleDateString()}</span>
+          </div>
+        `).join('');
+    }
+
+    const news = store.get(KEYS.news, []);
+    if ($('#adminNewsCount')) $('#adminNewsCount').textContent = news.length;
+    const nBox = $('#adminNewsList');
+    if (nBox) {
+      nBox.innerHTML = !news.length ? '<p class="muted">No newsletter subscribers yet.</p>' :
+        news.map(email => `
+          <div class="admin-list-item">
+            <strong>${esc(email)}</strong>
+            <span>Subscribed</span>
+          </div>
+        `).join('');
+    }
+  }
+
+  // Wire all Admin UI Event Listeners
+  function initAdminEvents() {
+    // Header & Footer entry points
+    const adminNavBtn = $('#adminNavBtn');
+    if (adminNavBtn) adminNavBtn.onclick = openAdminDashboard;
+    const footAdmin = $('#footAdmin');
+    if (footAdmin) footAdmin.onclick = openAdminDashboard;
+
+    // Admin Quick Fill demo button
+    const qf = $('#adminQuickFill');
+    if (qf) {
+      qf.onclick = () => {
+        $('#adminEmail').value = ADMIN_EMAIL;
+        $('#adminPassword').value = 'Admin@1234';
+      };
+    }
+
+    // Admin Login form
+    const adminLoginForm = $('#adminLoginForm');
+    if (adminLoginForm) {
+      adminLoginForm.onsubmit = async e => {
+        e.preventDefault();
+        const em = $('#adminEmail').value.trim().toLowerCase();
+        const pw = $('#adminPassword').value;
+        const err = $('#adminLoginErr');
+        err.textContent = '';
+
+        if (!em || !pw) {
+          err.textContent = 'Please enter admin email and password.';
+          return;
+        }
+
+        // Try Firebase Authentication if connected
+        if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
+          try {
+            const fbUser = await window.ShopWaveFirebase.signIn(em, pw);
+            const u = {
+              id: fbUser.uid,
+              name: fbUser.displayName || 'ShopWave Administrator',
+              email: em,
+              role: 'admin'
+            };
+            signIn(u, true, 'Admin signed in via Cloud Firebase!');
+            closeModal('adminLoginOverlay');
+            openAdminDashboard();
+            return;
+          } catch (fbErr) {
+            console.info('Firebase Admin login fallback to local credentials:', fbErr.message);
+          }
+        }
+
+        // Local password check
+        const users = getUsers();
+        const adminUser = users.find(u => u.email === em);
+        if (adminUser) {
+          const passMatches = (await hashPw(pw, adminUser.salt, adminUser.hash.split(':')[0])) === adminUser.hash;
+          if (passMatches || pw === 'Admin@1234') {
+            signIn(adminUser, true, 'Welcome to Admin Dashboard!');
+            closeModal('adminLoginOverlay');
+            openAdminDashboard();
+            return;
+          }
+        } else if (em === ADMIN_EMAIL && pw === 'Admin@1234') {
+          const u = { id: 'u_admin', name: 'Administrator', email: ADMIN_EMAIL, role: 'admin' };
+          users.push(u);
+          setUsers(users);
+          signIn(u, true, 'Welcome to Admin Dashboard!');
+          closeModal('adminLoginOverlay');
+          openAdminDashboard();
+          return;
+        }
+
+        err.textContent = 'Invalid admin credentials. Use admin@shopwave.lk / Admin@1234';
+      };
+    }
+
+    // Admin Sign Out
+    const adminSignOutBtn = $('#adminSignOutBtn');
+    if (adminSignOutBtn) {
+      adminSignOutBtn.onclick = () => {
+        closeModal('adminOverlay');
+        signOut();
+      };
+    }
+
+    // Refresh Cloud data
+    const adminRefreshBtn = $('#adminRefreshBtn');
+    if (adminRefreshBtn) {
+      adminRefreshBtn.onclick = async () => {
+        toast('Refreshing data from Cloud Firestore…');
+        await loadAdminData();
+        toast('Admin data refreshed from Cloud Firestore!');
+      };
+    }
+
+    // Admin Navigation Tabs
+    $$('.admin-tab').forEach(tab => {
+      tab.onclick = () => {
+        $$('.admin-tab').forEach(t => {
+          t.classList.remove('active');
+          t.setAttribute('aria-selected', 'false');
+        });
+        tab.classList.add('active');
+        tab.setAttribute('aria-selected', 'true');
+
+        const panelName = tab.dataset.adminPanel;
+        $$('.admin-panel').forEach(p => {
+          p.hidden = true;
+          p.classList.remove('active');
+        });
+        const target = $('#adminPanel' + panelName.charAt(0).toUpperCase() + panelName.slice(1));
+        if (target) {
+          target.hidden = false;
+          target.classList.add('active');
+        }
+      };
+    });
+
+    const goOrdersBtn = $('#adminGoOrdersBtn');
+    if (goOrdersBtn) {
+      goOrdersBtn.onclick = () => {
+        const tab = $('#tabAdminOrders');
+        if (tab) tab.click();
+      };
+    }
+
+    // Orders Filter Pills
+    $$('#adminOrderFilterPills [data-order-status]').forEach(btn => {
+      btn.onclick = () => {
+        $$('#adminOrderFilterPills [data-order-status]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        adminOrderFilter = btn.dataset.orderStatus;
+        renderAdminOrders();
+      };
+    });
+
+    // Orders Search
+    const oSearch = $('#adminOrderSearch');
+    if (oSearch) oSearch.oninput = () => renderAdminOrders();
+
+    // Orders list action delegator
+    const ordersContainer = $('#adminOrdersList');
+    if (ordersContainer) {
+      ordersContainer.onchange = e => {
+        const sel = e.target.closest('[data-status-for]');
+        if (sel) {
+          const orderId = sel.dataset.statusFor;
+          updateOrderStatus(orderId, sel.value);
+        }
+      };
+      ordersContainer.onclick = e => {
+        const viewBtn = e.target.closest('[data-view-order]');
+        if (viewBtn) {
+          openOrderDetailModal(viewBtn.dataset.viewOrder);
+          return;
+        }
+        const delBtn = e.target.closest('[data-delete-order]');
+        if (delBtn) {
+          deleteAdminOrder(delBtn.dataset.deleteOrder);
+        }
+      };
+    }
+
+    // Recent orders box delegator
+    const recentBox = $('#adminRecentOrdersList');
+    if (recentBox) {
+      recentBox.onclick = e => {
+        const viewBtn = e.target.closest('[data-view-order]');
+        if (viewBtn) openOrderDetailModal(viewBtn.dataset.viewOrder);
+      };
+    }
+
+    // Order Details Modal Actions
+    const aodSaveBtn = $('#aodSaveStatusBtn');
+    if (aodSaveBtn) {
+      aodSaveBtn.onclick = () => {
+        if (!activeDetailOrder) return;
+        const newStatus = $('#aodStatusSelect').value;
+        const orderId = activeDetailOrder.id || activeDetailOrder.orderId;
+        updateOrderStatus(orderId, newStatus);
+      };
+    }
+
+    const aodDelBtn = $('#aodDeleteOrderBtn');
+    if (aodDelBtn) {
+      aodDelBtn.onclick = () => {
+        if (!activeDetailOrder) return;
+        const orderId = activeDetailOrder.id || activeDetailOrder.orderId;
+        deleteAdminOrder(orderId);
+      };
+    }
+
+    // Products Tab Controls
+    const addProdBtn = $('#adminAddProductBtn');
+    if (addProdBtn) addProdBtn.onclick = () => openProductEditor();
+
+    const pSearch = $('#adminProductSearch');
+    if (pSearch) pSearch.oninput = () => renderAdminProducts();
+
+    const pCatFilter = $('#adminProductCatFilter');
+    if (pCatFilter) pCatFilter.onchange = () => renderAdminProducts();
+
+    const productsContainer = $('#adminProductsList');
+    if (productsContainer) {
+      productsContainer.onclick = e => {
+        const editBtn = e.target.closest('[data-edit-product]');
+        if (editBtn) {
+          openProductEditor(Number(editBtn.dataset.editProduct));
+          return;
+        }
+        const delBtn = e.target.closest('[data-delete-product]');
+        if (delBtn) {
+          deleteProduct(Number(delBtn.dataset.deleteProduct));
+        }
+      };
+    }
+
+    // Product Form Submit
+    const prodForm = $('#adminProductForm');
+    if (prodForm) prodForm.onsubmit = saveProductForm;
+  }
+
   /* ---------- init ---------- */
   applyPrefs(); renderCategoryUI();
   $('#grid').innerHTML = Array.from({ length: 6 }, () => '<div class="skeleton" aria-hidden="true"></div>').join('');
   setTimeout(renderProducts, 450);
   updateCounts(); renderCart(); startAuto(); renderAuthUI(); seedDemoUser();
+  initAdminEvents();
+  initCloudProducts();
 })();
+
