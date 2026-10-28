@@ -1171,10 +1171,12 @@
       try {
         const fbUser = await window.ShopWaveFirebase.signIn(email, pw);
         const profile = await window.ShopWaveFirebase.getUserProfile(fbUser.uid);
+        const isAdm = (email === ADMIN_EMAIL || (profile && profile.role === 'admin'));
         const u = {
           id: fbUser.uid,
-          name: (profile && profile.name) || fbUser.displayName || email.split('@')[0],
+          name: (profile && profile.name) || fbUser.displayName || (isAdm ? 'ShopWave Administrator' : email.split('@')[0]),
           email: email,
+          role: isAdm ? 'admin' : ((profile && profile.role) || 'customer'),
           phone: (profile && profile.phone) || '',
           address: (profile && profile.address) || '',
           city: (profile && profile.city) || '',
@@ -1198,26 +1200,42 @@
 
         btn.disabled = false; btn.textContent = 'Sign in';
         $('#loginForm').reset();
-        signIn(u, remember, 'Welcome back, ' + firstName(u) + '! (Cloud Firebase)');
+        signIn(u, remember, isAdm ? 'Welcome to Admin Dashboard!' : 'Welcome back, ' + firstName(u) + '! (Cloud Firebase)');
         return;
       } catch (fbErr) {
-        btn.disabled = false; btn.textContent = 'Sign in';
-        err.textContent = fbErr.message || 'Incorrect email or password.';
-        shakeModal('authOverlay');
-        $('#loginPassword').value = ''; $('#loginPassword').focus();
-        return;
+        console.info('Firebase login fallback to local credentials:', fbErr.message);
       }
     }
 
     const lk = getLock(email);
     if (lk.until > Date.now()) { err.textContent = 'Too many failed attempts. For your security, please wait before trying again.'; lockCountdown(btn, lk.until); shakeModal('authOverlay'); return; }
     btn.disabled = true; btn.textContent = 'Signing in…';
-    const u = findUser(email);
-    const ok = u ? (await hashPw(pw, u.salt, u.hash.split(':')[0])) === u.hash : (await hashPw(pw, '00'), false);
+    const users = getUsers();
+    let u = users.find(x => x.email === email);
+
+    // Check credentials (including built-in admin credentials & customer accounts)
+    let ok = false;
+    if (email === ADMIN_EMAIL && pw === 'Admin@1234') {
+      ok = true;
+      if (!u) {
+        u = { id: 'u_admin', name: 'ShopWave Administrator', email: ADMIN_EMAIL, role: 'admin' };
+        users.push(u);
+        setUsers(users);
+      }
+    } else if (u) {
+      const passMatches = (await hashPw(pw, u.salt, u.hash.split(':')[0])) === u.hash;
+      if (passMatches || (u.role === 'admin' && pw === 'Admin@1234')) {
+        ok = true;
+      }
+    } else {
+      await hashPw(pw, '00');
+    }
+
     if (ok) {
       setLock(email, null); btn.disabled = false; btn.textContent = 'Sign in';
       $('#loginForm').reset();
-      signIn(u, remember, 'Welcome back, ' + firstName(u) + '!');
+      const isAdm = (u.email === ADMIN_EMAIL || u.role === 'admin');
+      signIn(u, remember, isAdm ? 'Welcome to Admin Dashboard!' : 'Welcome back, ' + firstName(u) + '!');
       return;
     }
     const n = lk.n + 1;
@@ -1512,7 +1530,7 @@
   // Open Admin Dashboard
   async function openAdminDashboard() {
     if (!isAdmin()) {
-      openModal('adminLoginOverlay', '#adminEmail');
+      openAuth('login', { reason: 'Administrator access required. Please sign in with your admin account.' });
       return;
     }
 
@@ -2054,80 +2072,6 @@
 
   // Wire all Admin UI Event Listeners
   function initAdminEvents() {
-    // Header & Footer entry points
-    const adminNavBtn = $('#adminNavBtn');
-    if (adminNavBtn) adminNavBtn.onclick = openAdminDashboard;
-    const footAdmin = $('#footAdmin');
-    if (footAdmin) footAdmin.onclick = openAdminDashboard;
-
-    // Admin Quick Fill demo button
-    const qf = $('#adminQuickFill');
-    if (qf) {
-      qf.onclick = () => {
-        $('#adminEmail').value = ADMIN_EMAIL;
-        $('#adminPassword').value = 'Admin@1234';
-      };
-    }
-
-    // Admin Login form
-    const adminLoginForm = $('#adminLoginForm');
-    if (adminLoginForm) {
-      adminLoginForm.onsubmit = async e => {
-        e.preventDefault();
-        const em = $('#adminEmail').value.trim().toLowerCase();
-        const pw = $('#adminPassword').value;
-        const err = $('#adminLoginErr');
-        err.textContent = '';
-
-        if (!em || !pw) {
-          err.textContent = 'Please enter admin email and password.';
-          return;
-        }
-
-        // Try Firebase Authentication if connected
-        if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
-          try {
-            const fbUser = await window.ShopWaveFirebase.signIn(em, pw);
-            const u = {
-              id: fbUser.uid,
-              name: fbUser.displayName || 'ShopWave Administrator',
-              email: em,
-              role: 'admin'
-            };
-            signIn(u, true, 'Admin signed in via Cloud Firebase!');
-            closeModal('adminLoginOverlay');
-            openAdminDashboard();
-            return;
-          } catch (fbErr) {
-            console.info('Firebase Admin login fallback to local credentials:', fbErr.message);
-          }
-        }
-
-        // Local password check
-        const users = getUsers();
-        const adminUser = users.find(u => u.email === em);
-        if (adminUser) {
-          const passMatches = (await hashPw(pw, adminUser.salt, adminUser.hash.split(':')[0])) === adminUser.hash;
-          if (passMatches || pw === 'Admin@1234') {
-            signIn(adminUser, true, 'Welcome to Admin Dashboard!');
-            closeModal('adminLoginOverlay');
-            openAdminDashboard();
-            return;
-          }
-        } else if (em === ADMIN_EMAIL && pw === 'Admin@1234') {
-          const u = { id: 'u_admin', name: 'Administrator', email: ADMIN_EMAIL, role: 'admin' };
-          users.push(u);
-          setUsers(users);
-          signIn(u, true, 'Welcome to Admin Dashboard!');
-          closeModal('adminLoginOverlay');
-          openAdminDashboard();
-          return;
-        }
-
-        err.textContent = 'Invalid admin credentials. Use admin@shopwave.lk / Admin@1234';
-      };
-    }
-
     // Admin Sign Out
     const adminSignOutBtn = $('#adminSignOutBtn');
     if (adminSignOutBtn) {
