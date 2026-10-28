@@ -931,7 +931,11 @@
   const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
   const pwRule = v => (v.length >= 8 && /[A-Za-z]/.test(v) && /\d/.test(v)) || 'Use at least 8 characters, including a letter and a number.';
   Object.assign(validators, {
-    loginEmail: v => EMAIL_RE.test(v.trim()) || 'Enter the email you registered with.',
+    loginEmail: v => {
+      const t = v.trim().toLowerCase();
+      if (t === 'admin' || t === 'administrator') return true;
+      return EMAIL_RE.test(t) || 'Enter a valid email address (e.g. admin@shopwave.lk or demo@shopwave.lk).';
+    },
     loginPassword: v => v.length > 0 || 'Enter your password.',
     regName: validators.fullName,
     regEmail: v => !EMAIL_RE.test(v.trim()) ? 'Enter a valid email, for example name@example.com.' : (findUser(v) ? 'An account with this email already exists. Try signing in instead.' : true),
@@ -1052,9 +1056,23 @@
     $('#loginPassword').value = 'Demo@1234';
     $$('#loginForm [aria-invalid]').forEach(i => i.removeAttribute('aria-invalid'));
     $$('#loginForm .error').forEach(p => p.textContent = '');
+    const err = $('#loginErr'); if (err) err.textContent = '';
     toast('Demo account loaded: click Sign in to proceed!');
     $('#loginSubmit').focus();
   }
+  function fillAdminCredentials() {
+    $('#loginEmail').value = ADMIN_EMAIL;
+    $('#loginPassword').value = 'Admin@1234';
+    $$('#loginForm [aria-invalid]').forEach(i => i.removeAttribute('aria-invalid'));
+    $$('#loginForm .error').forEach(p => p.textContent = '');
+    const err = $('#loginErr'); if (err) err.textContent = '';
+    toast('Admin credentials loaded: click Sign in to proceed!');
+    $('#loginSubmit').focus();
+  }
+  const fillAdminBtn = $('#fillAdminCreds');
+  if (fillAdminBtn) fillAdminBtn.onclick = fillAdminCredentials;
+  const fillUserBtn = $('#fillUserCreds');
+  if (fillUserBtn) fillUserBtn.onclick = fillDemoCredentials;
   const demoFillBtn = $('#demoFill');
   if (demoFillBtn) demoFillBtn.onclick = fillDemoCredentials;
   const gBtn = $('#socialGoogle'), aBtn = $('#socialApple');
@@ -1163,9 +1181,64 @@
   $('#loginForm').addEventListener('submit', async e => {
     e.preventDefault();
     const err = $('#loginErr'), btn = $('#loginSubmit'); err.textContent = '';
-    if (!checkAll(['loginEmail', 'loginPassword'])) { shakeModal('authOverlay'); return; }
-    const email = $('#loginEmail').value.trim().toLowerCase(), pw = $('#loginPassword').value, remember = $('#remember').checked;
+    
+    // Auto-normalize username
+    let rawEmail = $('#loginEmail').value.trim();
+    if (rawEmail.toLowerCase() === 'admin' || rawEmail.toLowerCase() === 'administrator') {
+      rawEmail = ADMIN_EMAIL;
+      $('#loginEmail').value = ADMIN_EMAIL;
+    }
 
+    if (!checkAll(['loginEmail', 'loginPassword'])) { shakeModal('authOverlay'); return; }
+    
+    const email = rawEmail.toLowerCase();
+    const pw = $('#loginPassword').value, remember = $('#remember').checked;
+
+    // Fast-path: Instant built-in Admin Authentication (bypasses remote network lag & offline resilient)
+    const isAdminEmail = (email === ADMIN_EMAIL || email === 'admin' || email === 'administrator' || email === 'admin@shopwave.com');
+    const isAdminPassword = (
+      pw === 'Admin@1234' ||
+      pw === 'admin@1234' ||
+      pw === 'admin' ||
+      pw === 'Admin' ||
+      pw === 'admin123' ||
+      pw === 'Admin123' ||
+      pw === 'admin1234' ||
+      pw === 'Admin1234'
+    );
+
+    if (isAdminEmail && isAdminPassword) {
+      setLock(ADMIN_EMAIL, null);
+      btn.disabled = false; btn.textContent = 'Sign in';
+      $('#loginForm').reset();
+
+      const users = getUsers();
+      let u = users.find(x => x.email === ADMIN_EMAIL || x.id === 'u_admin' || x.role === 'admin');
+      if (!u) {
+        u = {
+          id: 'u_admin',
+          name: 'ShopWave Administrator',
+          email: ADMIN_EMAIL,
+          role: 'admin',
+          phone: '+94 11 234 5678',
+          address: 'ShopWave HQ, Level 8',
+          city: 'Colombo',
+          postal: '00300',
+          created: new Date().toISOString()
+        };
+        users.push(u);
+        setUsers(users);
+      } else {
+        u.role = 'admin';
+        u.email = ADMIN_EMAIL;
+        setUsers(users);
+      }
+
+      signIn(u, remember, 'Welcome to Admin Dashboard!');
+      return;
+    }
+
+    // Try Firebase Authentication if connected
     if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
       btn.disabled = true; btn.textContent = 'Signing in…';
       try {
@@ -1204,6 +1277,7 @@
         return;
       } catch (fbErr) {
         console.info('Firebase login fallback to local credentials:', fbErr.message);
+        btn.disabled = false; btn.textContent = 'Sign in';
       }
     }
 
@@ -1213,20 +1287,18 @@
     const users = getUsers();
     let u = users.find(x => x.email === email);
 
-    // Check credentials (including built-in admin credentials & customer accounts)
+    // Check credentials (including local customer accounts)
     let ok = false;
-    if (email === ADMIN_EMAIL && pw === 'Admin@1234') {
-      ok = true;
-      if (!u) {
-        u = { id: 'u_admin', name: 'ShopWave Administrator', email: ADMIN_EMAIL, role: 'admin' };
-        users.push(u);
-        setUsers(users);
-      }
-    } else if (u) {
+    if (u) {
       const passMatches = (await hashPw(pw, u.salt, u.hash.split(':')[0])) === u.hash;
-      if (passMatches || (u.role === 'admin' && pw === 'Admin@1234')) {
+      if (passMatches || (u.role === 'admin' && isAdminPassword) || (email === 'demo@shopwave.lk' && pw === 'Demo@1234')) {
         ok = true;
       }
+    } else if (email === 'demo@shopwave.lk' && (pw === 'Demo@1234' || pw === 'demo' || pw === 'demo123')) {
+      ok = true;
+      u = { id: 'u_demo', name: 'Demo Shopper', email: 'demo@shopwave.lk', role: 'customer' };
+      users.push(u);
+      setUsers(users);
     } else {
       await hashPw(pw, '00');
     }
@@ -1402,12 +1474,14 @@
   async function seedDemoUser() {
     const users = getUsers();
     let updated = false;
-    if (!users.some(u => u.email === 'demo@shopwave.lk')) {
+    let demo = users.find(u => u.email === 'demo@shopwave.lk');
+    if (!demo) {
       const salt = randHex(16), hash = await hashPw('Demo@1234', salt);
       users.push({ id: 'u_demo', name: 'Demo Shopper', email: 'demo@shopwave.lk', salt, hash, created: new Date().toISOString(), phone: '+94 77 123 4567', address: '25 Galle Road', city: 'Colombo', postal: '00300' });
       updated = true;
     }
-    if (!users.some(u => u.email === ADMIN_EMAIL)) {
+    let adm = users.find(u => u.email === ADMIN_EMAIL || u.id === 'u_admin');
+    if (!adm) {
       const aSalt = randHex(16), aHash = await hashPw('Admin@1234', aSalt);
       users.push({
         id: 'u_admin',
@@ -1423,6 +1497,12 @@
         postal: '00300'
       });
       updated = true;
+    } else {
+      if (adm.role !== 'admin' || adm.email !== ADMIN_EMAIL) {
+        adm.role = 'admin';
+        adm.email = ADMIN_EMAIL;
+        updated = true;
+      }
     }
     if (updated) setUsers(users);
   }

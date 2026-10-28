@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
     rel="stylesheet">
   <link rel="icon" type="image/png" href="shopwave-cart-icon-clean.png">
-  <link rel="stylesheet" href="styles.css?v=3.0">
+  <link rel="stylesheet" href="styles.css?v=3.1">
 </head>
 
 <body>
@@ -854,7 +854,7 @@
                 <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
               </svg>
             </span>
-            <input id="loginEmail" type="email" autocomplete="email" placeholder="you@example.com"
+            <input id="loginEmail" type="text" inputmode="email" autocomplete="username" placeholder="admin@shopwave.lk or your email"
               aria-describedby="err-loginEmail">
           </div>
           <p class="error" id="err-loginEmail"></p>
@@ -933,6 +933,14 @@
             </svg>
             <span>Apple</span>
           </button>
+        </div>
+
+        <div class="auth-demo-hint">
+          <div class="demo-hint-title">⚡ Quick Sign-In Options</div>
+          <div class="demo-chips">
+            <button type="button" class="chip chip-admin-fill" id="fillAdminCreds" title="Auto-fill and login as Admin">⚡ Admin: admin@shopwave.lk / Admin@1234</button>
+            <button type="button" class="chip chip-user-fill" id="fillUserCreds" title="Auto-fill and login as Customer">👤 Demo: demo@shopwave.lk / Demo@1234</button>
+          </div>
         </div>
       </form>
 
@@ -1466,7 +1474,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
   <script src="firebase-config.js"></script>
-  <script src="app.js?v=3.0"></script>
+  <script src="app.js?v=3.1"></script>
 </body>
 
 </html>
