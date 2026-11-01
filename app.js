@@ -788,6 +788,7 @@
     if (!terms.checked) { err.textContent = 'Please accept the terms to place your order.'; terms.setAttribute('aria-invalid', 'true'); terms.focus(); return; }
     err.textContent = ''; terms.removeAttribute('aria-invalid');
     const btn = $('#placeBtn'); btn.disabled = true; btn.textContent = '⏳ Processing payment…'; announce('Processing payment');
+    const t = totals();
     setTimeout(() => {
       for (const id of Object.keys(cart)) {
         if (cart[id] > getStock(id)) { toast(`${byId(id).name} no longer has enough stock. Please update your basket.`, 'error'); btn.disabled = false; btn.textContent = 'Place order'; closeModal('checkoutOverlay'); cart[id] = Math.max(0, getStock(id)); if (!cart[id]) delete cart[id]; save(); updateCounts(); renderCart(); return; }
@@ -934,7 +935,7 @@
     loginEmail: v => {
       const t = v.trim().toLowerCase();
       if (t === 'admin' || t === 'administrator') return true;
-      return EMAIL_RE.test(t) || 'Enter a valid email address (e.g. admin@shopwave.lk or demo@shopwave.lk).';
+      return EMAIL_RE.test(t) || 'Enter a valid email address (e.g. you@example.com).';
     },
     loginPassword: v => v.length > 0 || 'Enter your password.',
     regName: validators.fullName,
@@ -1273,7 +1274,7 @@
 
         btn.disabled = false; btn.textContent = 'Sign in';
         $('#loginForm').reset();
-        signIn(u, remember, isAdm ? 'Welcome to Admin Dashboard!' : 'Welcome back, ' + firstName(u) + '! (Cloud Firebase)');
+        signIn(u, remember, isAdm ? 'Welcome to Admin Dashboard!' : 'Welcome back, ' + firstName(u) + '!');
         return;
       } catch (fbErr) {
         console.info('Firebase login fallback to local credentials:', fbErr.message);
@@ -1421,8 +1422,8 @@
     const badgeText = $('#authBadgeText');
     if (badgeText) {
       if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
-        badgeText.textContent = 'Firebase Cloud DB Active';
-        badgeText.parentElement.style.borderColor = 'rgba(34,197,94,.4)';
+        badgeText.textContent = 'ShopWave Secure Portal';
+        badgeText.parentElement.style.borderColor = 'rgba(99,102,241,.3)';
       } else {
         badgeText.textContent = 'ShopWave Portal (Local Mode)';
       }

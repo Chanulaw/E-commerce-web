@@ -119,7 +119,7 @@
           </button>
           <div class="user-menu" id="userMenu" hidden>
             <div class="um-head"><strong id="menuName"></strong><span id="menuEmail"></span></div>
-            <button type="button" id="menuAdmin"><span aria-hidden="true">⚡</span> Admin Dashboard</button>
+            <button type="button" id="menuAdmin" hidden><span aria-hidden="true">⚡</span> Admin Dashboard</button>
             <button type="button" id="menuAccount"><span aria-hidden="true">⚙️</span> My account</button>
             <button type="button" id="menuOrders"><span aria-hidden="true">📦</span> My orders</button>
             <button type="button" id="menuSignOut"><span aria-hidden="true">↪️</span> Sign out</button>
@@ -371,7 +371,7 @@
 
         <div class="foot-status-badge">
           <span class="status-dot"></span>
-          <span>Live Store • Firebase Cloud Database</span>
+          <span>Live Store • Verified Secure</span>
         </div>
 
         <div class="foot-socials" aria-label="Social media links">
@@ -581,7 +581,7 @@
               <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"></path>
             </svg>
           </span>
-          <span>Firebase Cloud Hosted</span>
+          <span>Cloud Hosted & Synced</span>
         </div>
       </div>
     </div>
@@ -854,7 +854,7 @@
                 <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
               </svg>
             </span>
-            <input id="loginEmail" type="text" inputmode="email" autocomplete="username" placeholder="admin@shopwave.lk or your email"
+            <input id="loginEmail" type="text" inputmode="email" autocomplete="username" placeholder="e.g. you@example.com"
               aria-describedby="err-loginEmail">
           </div>
           <p class="error" id="err-loginEmail"></p>
@@ -933,14 +933,6 @@
             </svg>
             <span>Apple</span>
           </button>
-        </div>
-
-        <div class="auth-demo-hint">
-          <div class="demo-hint-title">⚡ Quick Sign-In Options</div>
-          <div class="demo-chips">
-            <button type="button" class="chip chip-admin-fill" id="fillAdminCreds" title="Auto-fill and login as Admin">⚡ Admin: admin@shopwave.lk / Admin@1234</button>
-            <button type="button" class="chip chip-user-fill" id="fillUserCreds" title="Auto-fill and login as Customer">👤 Demo: demo@shopwave.lk / Demo@1234</button>
-          </div>
         </div>
       </form>
 
@@ -1218,7 +1210,7 @@
         <div class="admin-title-wrap">
           <div class="admin-badge-pill">
             <span class="auth-badge-pulse" aria-hidden="true"></span>
-            <span id="adminCloudStatus">Cloud Firebase Live Sync Active</span>
+            <span id="adminCloudStatus">Live Cloud Sync Active</span>
           </div>
           <h2 id="adminDashTitle">ShopWave Administration Console</h2>
           <p class="muted small">Real-time store management: update order statuses, manage catalog pricing, and maintain stock.</p>

@@ -605,6 +605,7 @@ html.no-motion .reveal{opacity:1;transform:none}
 .um-head span{color:var(--muted);font-size:.82rem}
 .user-menu button{display:flex;width:100%;gap:.65rem;align-items:center;text-align:left;padding:.6rem .75rem;border:0;background:none;border-radius:12px;cursor:pointer;font-weight:600;font-size:.9rem;transition:background .15s}
 .user-menu button:hover{background:var(--surface2)}
+.user-menu button[hidden],[hidden]{display:none!important}
 .modal-auth{width:min(480px,100%);padding:2.2rem 2.2rem 1.8rem;border-radius:26px;position:relative;max-height:min(90vh,90dvh);overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:color-mix(in srgb,var(--surface) 96%,transparent);backdrop-filter:blur(24px) saturate(160%);-webkit-backdrop-filter:blur(24px) saturate(160%);border:1px solid color-mix(in srgb,var(--border) 80%,rgba(255,255,255,.4));box-shadow:0 25px 65px -12px rgba(15,23,42,.25),0 0 0 1px rgba(255,255,255,.08)}
 .modal::-webkit-scrollbar,.modal-auth::-webkit-scrollbar{width:6px}
 .modal::-webkit-scrollbar-track,.modal-auth::-webkit-scrollbar-track{background:transparent;margin:12px 0}
