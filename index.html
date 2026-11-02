@@ -1276,9 +1276,30 @@
               <strong class="stat-val" id="adminStatProducts">10</strong>
             </div>
           </div>
+          <div class="admin-stat-card">
+            <div class="stat-icon icon-users" aria-hidden="true">👥</div>
+            <div class="stat-content">
+              <span class="stat-label">Users / Shoppers</span>
+              <strong class="stat-val" id="adminStatUsers">0</strong>
+            </div>
+          </div>
         </div>
 
         <div class="admin-overview-sections">
+          <!-- Active & Logged In Users Card -->
+          <div class="admin-box" style="margin-bottom: 1.5rem;">
+            <div class="admin-box-head">
+              <div style="display:flex;align-items:center;gap:0.6rem;">
+                <h3>Active &amp; Registered Shoppers</h3>
+                <span class="badge" id="adminOverviewUsersBadge">0</span>
+              </div>
+              <button type="button" class="btn btn-sm btn-outline" id="adminGoCustomersBtn">View Full Customers Tab →</button>
+            </div>
+            <div id="adminOverviewUsersList" class="admin-recent-orders-list">
+              <p class="muted">Loading user accounts…</p>
+            </div>
+          </div>
+
           <div class="admin-box">
             <div class="admin-box-head">
               <h3>Latest Customer Orders</h3>

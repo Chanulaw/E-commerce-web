@@ -220,6 +220,18 @@ window.ShopWaveFirebase = {
     return snap.exists && snap.data().wishlist ? snap.data().wishlist : null;
   },
 
+  // ---- Admin & Users Database ----
+  async getAllUsers() {
+    if (!this.isReady()) return [];
+    try {
+      const snap = await fbDb.collection('users').get();
+      return snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+    } catch (err) {
+      console.warn('Could not fetch Firestore users:', err);
+      return [];
+    }
+  },
+
   // ---- Admin & All Orders Database ----
   async getAllOrders() {
     if (!this.isReady()) return [];

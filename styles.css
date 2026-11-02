@@ -824,6 +824,13 @@ html.no-motion .reveal{opacity:1;transform:none}
 .badge-status.shipped{background:rgba(14,165,233,.15);color:#0284c7;border:1px solid rgba(14,165,233,.3)}
 .badge-status.delivered{background:rgba(34,197,94,.15);color:#16a34a;border:1px solid rgba(34,197,94,.3)}
 .badge-status.cancelled{background:rgba(239,68,68,.15);color:#dc2626;border:1px solid rgba(239,68,68,.3)}
+.badge-status.active{background:rgba(34,197,94,.18);color:#16a34a;border:1px solid rgba(34,197,94,.4)}
+.badge-status.admin{background:rgba(99,102,241,.18);color:#6366f1;border:1px solid rgba(99,102,241,.4)}
+.badge-status.member{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
+.icon-users{background:rgba(168,85,247,.15);color:#a855f7}
+.user-avatar-sm{width:32px;height:32px;border-radius:50%;background:color-mix(in srgb,var(--primary) 20%,var(--surface2));display:inline-grid;place-items:center;font-weight:800;font-size:.85rem;color:var(--primary);flex-shrink:0}
+.user-avatar-sm.admin{background:linear-gradient(135deg,#6366f1,#a855f7);color:#fff}
+.overview-user-cell{display:flex;align-items:center;gap:.75rem}
 
 /* Admin Products List */
 .admin-products-container{display:flex;flex-direction:column;gap:.75rem}

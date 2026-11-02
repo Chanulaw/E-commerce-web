@@ -1691,6 +1691,31 @@
       } catch (e) {
         console.warn('Could not fetch all orders from Firestore:', e);
       }
+      try {
+        const cloudUsers = await window.ShopWaveFirebase.getAllUsers();
+        if (cloudUsers && cloudUsers.length) {
+          const currentUsers = getUsers();
+          const userMap = new Map();
+          currentUsers.forEach(u => userMap.set(u.email || u.id, u));
+          cloudUsers.forEach(cu => {
+            const key = cu.email || cu.id;
+            if (!userMap.has(key)) {
+              userMap.set(key, {
+                id: cu.uid || cu.id,
+                name: cu.name || 'Shopper',
+                email: cu.email,
+                phone: cu.phone || '',
+                address: cu.address || '',
+                city: cu.city || '',
+                created: cu.createdAt ? (cu.createdAt.toDate ? cu.createdAt.toDate().toISOString() : new Date().toISOString()) : new Date().toISOString()
+              });
+            }
+          });
+          setUsers(Array.from(userMap.values()));
+        }
+      } catch (e) {
+        console.warn('Could not fetch users from Firestore:', e);
+      }
     }
 
     // Merge with local orders
@@ -1730,6 +1755,74 @@
     if ($('#adminStatOrders')) $('#adminStatOrders').textContent = adminOrders.length;
     if ($('#adminStatProcessing')) $('#adminStatProcessing').textContent = procCount;
     if ($('#adminStatProducts')) $('#adminStatProducts').textContent = PRODUCTS.length;
+
+    // Compile users overview
+    const users = getUsers();
+    const curU = currentUser();
+    const allOverviewUsers = [];
+
+    // Current active admin
+    allOverviewUsers.push({
+      id: 'u_admin',
+      name: (curU && curU.role === 'admin') ? curU.name : 'Administrator',
+      email: ADMIN_EMAIL,
+      role: 'admin',
+      isOnline: isAdmin(),
+      created: '2026-01-01T00:00:00.000Z'
+    });
+
+    // Registered shoppers
+    users.forEach(u => {
+      if (u.email === ADMIN_EMAIL) return;
+      const isOnline = Boolean(session && session.uid === u.id);
+      allOverviewUsers.push({
+        ...u,
+        role: u.role || 'customer',
+        isOnline
+      });
+    });
+
+    if ($('#adminStatUsers')) $('#adminStatUsers').textContent = allOverviewUsers.length;
+    if ($('#adminOverviewUsersBadge')) $('#adminOverviewUsersBadge').textContent = allOverviewUsers.length;
+
+    const uBox = $('#adminOverviewUsersList');
+    if (uBox) {
+      uBox.innerHTML = `
+        <table class="aod-table">
+          <thead>
+            <tr>
+              <th>User</th>
+              <th>Email</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Orders</th>
+              <th>Registered</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${allOverviewUsers.map(u => {
+              const uOrders = adminOrders.filter(o => (o.email && o.email.toLowerCase() === (u.email || '').toLowerCase()) || (u.id && o.uid === u.id));
+              const initial = (u.name || 'U').trim()[0].toUpperCase();
+              return `
+                <tr>
+                  <td>
+                    <div class="overview-user-cell">
+                      <span class="user-avatar-sm ${u.role === 'admin' ? 'admin' : ''}">${u.role === 'admin' ? '⚡' : initial}</span>
+                      <strong>${esc(u.name || 'Customer')}</strong>
+                    </div>
+                  </td>
+                  <td>${esc(u.email || 'N/A')}</td>
+                  <td><span class="badge-status ${u.role === 'admin' ? 'admin' : 'member'}">${u.role === 'admin' ? 'Administrator' : 'Customer'}</span></td>
+                  <td><span class="badge-status ${u.isOnline ? 'active' : 'member'}">${u.isOnline ? '🟢 Active Now' : '⚪ Registered'}</span></td>
+                  <td><strong>${uOrders.length}</strong> ${uOrders.length === 1 ? 'order' : 'orders'}</td>
+                  <td>${new Date(u.created || Date.now()).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</td>
+                </tr>
+              `;
+            }).join('')}
+          </tbody>
+        </table>
+      `;
+    }
 
     const recent = adminOrders.slice(0, 5);
     const box = $('#adminRecentOrdersList');
@@ -2328,6 +2421,14 @@
     if (goOrdersBtn) {
       goOrdersBtn.onclick = () => {
         const tab = $('#tabAdminOrders');
+        if (tab) tab.click();
+      };
+    }
+
+    const goCustBtn = $('#adminGoCustomersBtn');
+    if (goCustBtn) {
+      goCustBtn.onclick = () => {
+        const tab = $('#tabAdminCustomers');
         if (tab) tab.click();
       };
     }
