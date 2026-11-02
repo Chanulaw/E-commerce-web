@@ -11,6 +11,7 @@
   const KEYS = { cart: 'sw_cart', wish: 'sw_wishlist', orders: 'sw_orders', stock: 'sw_stock', prefs: 'sw_prefs', promo: 'sw_promo', news: 'sw_newsletter', users: 'sw_users', session: 'sw_session', lock: 'sw_lock' };
   const money = n => 'Rs. ' + Math.round(n).toLocaleString('en-US');
   const motionOff = () => document.documentElement.classList.contains('no-motion') || matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const esc = s => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
   /* ---------- data: exactly 10 products, exactly 3 categories (CINEC Assignment Specification) ---------- */
   const CATEGORIES = [
@@ -275,10 +276,11 @@
                    src="${src}" 
                    data-idx="${idx}" 
                    data-emoji="${p.emoji}" 
-                   alt="${p.name} view ${idx + 1}" 
+                   alt="${esc(p.name)} view ${idx + 1}" 
                    width="512" height="512" 
                    loading="${i < 4 && idx === 0 ? 'eager' : 'lazy'}" 
-                   decoding="async">
+                   decoding="async"
+                   onerror="this.onerror=null; this.src='product-1-still.jpg';">
             `).join('')}
           </div>
         </button>
@@ -813,7 +815,6 @@
   }
   const payMethod = () => $('input[name=pay]:checked').value;
   function renderReview() {
-    const esc = s => s.replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
     const d = i => esc($('#' + i).value.trim());
     const card = $('#cardNumber').value.replace(/\s/g, '');
     $('#reviewBox').innerHTML = `<section><h4>Deliver to</h4><p>${d('fullName')}<br>${d('address')}, ${d('city')} ${d('postal')}<br>${d('email')} · ${d('phone')}</p></section>
