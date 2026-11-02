@@ -2013,6 +2013,58 @@
     }).join('');
   }
 
+  // Helper to intelligently resolve image for newly added / edited products
+  function resolveProductImage(name = '', category = 'electronics', customImg = '') {
+    if (customImg && customImg.trim()) return customImg.trim();
+    const q = (name || '').toLowerCase().trim();
+    if (q.includes('watch') || q.includes('wotch') || q.includes('smartwatch') || q.includes('clock') || q.includes('pulse')) {
+      return 'product-2-still.jpg';
+    }
+    if (q.includes('speaker') || q.includes('echo') || q.includes('sound') || q.includes('bluetooth')) {
+      return 'product-3-still.jpg';
+    }
+    if (q.includes('power') || q.includes('bank') || q.includes('charger') || q.includes('battery') || q.includes('volt')) {
+      return 'product-4-still.jpg';
+    }
+    if (q.includes('shirt') || q.includes('tshirt') || q.includes('tee') || q.includes('cotton')) {
+      return 'product-5-still.jpg';
+    }
+    if (q.includes('jacket') || q.includes('denim') || q.includes('coat')) {
+      return 'product-6-still.jpg';
+    }
+    if (q.includes('shoe') || q.includes('shoes') || q.includes('sneaker') || q.includes('running') || q.includes('stride')) {
+      return 'product-7-still.jpg';
+    }
+    if (q.includes('tea') || q.includes('ceylon') || q.includes('coffee') || q.includes('drink')) {
+      return 'product-8-still.jpg';
+    }
+    if (q.includes('oil') || q.includes('coconut')) {
+      return 'product-9-still.jpg';
+    }
+    if (q.includes('chocolate') || q.includes('cocoa') || q.includes('candy') || q.includes('sweet')) {
+      return 'product-10-still.jpg';
+    }
+    if (q.includes('headphone') || q.includes('earbud') || q.includes('audio') || q.includes('aurora')) {
+      return 'product-1-still.jpg';
+    }
+    if (category === 'clothing') return 'product-5-still.jpg';
+    if (category === 'food') return 'product-8-still.jpg';
+    return 'product-2-still.jpg';
+  }
+
+  // Set and preview image in Admin Product Modal
+  function setProductEditorImage(src) {
+    const imgEl = $('#apmPreviewImg');
+    const inputEl = $('#apmImg');
+    if (inputEl) inputEl.value = src || '';
+    if (imgEl) {
+      imgEl.src = src || 'product-2-still.jpg';
+    }
+    $$('.apm-preset-btn').forEach(btn => {
+      btn.classList.toggle('selected', btn.dataset.img === src);
+    });
+  }
+
   // Open Product Editor Modal
   function openProductEditor(id = null) {
     const isEdit = id != null && id !== '';
@@ -2037,7 +2089,8 @@
       $('#apmWas').value = p.was || '';
       $('#apmEmoji').value = p.emoji || '🛍️';
       $('#apmRating').value = p.rating || 4.5;
-      $('#apmImg').value = (p.images && p.images[0]) || p.img || '';
+      const initialImg = (p.images && p.images[0]) || p.img || '';
+      setProductEditorImage(initialImg);
       $('#apmDesc').value = p.desc || '';
       $('#apmFeatures').value = (p.features || []).join('\n');
     } else {
@@ -2046,6 +2099,7 @@
       $('#apmStock').value = 10;
       $('#apmEmoji').value = '🛍️';
       $('#apmRating').value = 4.5;
+      setProductEditorImage('product-2-still.jpg');
     }
 
     openModal('adminProductModal', '#apmName');
@@ -2064,7 +2118,7 @@
     const wasVal = $('#apmWas').value ? parseFloat($('#apmWas').value) : null;
     const emoji = $('#apmEmoji').value.trim() || '🛍️';
     const rating = Math.min(5, Math.max(1, parseFloat($('#apmRating').value) || 4.5));
-    const imgVal = $('#apmImg').value.trim();
+    const rawImg = $('#apmImg').value.trim();
     const desc = $('#apmDesc').value.trim();
     const features = $('#apmFeatures').value.split('\n').map(s => s.trim()).filter(Boolean);
 
@@ -2072,6 +2126,8 @@
       toast('Please fill out all required fields.', 'error');
       return;
     }
+
+    const finalImg = resolveProductImage(name, category, rawImg);
 
     let p;
     if (isEdit) {
@@ -2093,13 +2149,9 @@
       else if (category === 'food') p.c = ['#16a34a', '#84cc16'];
       else p.c = ['#6366f1', '#a78bfa'];
 
-      if (imgVal) {
-        if (!p.images || !p.images.length || p.images[0] !== imgVal) {
-          p.images = [imgVal, ...(p.images || []).filter(x => x !== imgVal)];
-        }
-        p.img = imgVal;
-        p.still = imgVal;
-      }
+      p.images = [finalImg, ...(p.images || []).filter(x => x !== finalImg)];
+      p.img = finalImg;
+      p.still = finalImg;
     } else {
       const maxNumericId = PRODUCTS.reduce((max, x) => {
         const n = Number(x.id);
@@ -2120,9 +2172,9 @@
         c: defaultPalette,
         desc,
         features,
-        images: imgVal ? [imgVal] : [`product-${(newId % 10) || 1}-still.jpg`],
-        img: imgVal || `product-${(newId % 10) || 1}-still.jpg`,
-        still: imgVal || `product-${(newId % 10) || 1}-still.jpg`
+        images: [finalImg],
+        img: finalImg,
+        still: finalImg
       };
       PRODUCTS.push(p);
     }
@@ -2371,12 +2423,104 @@
       };
     }
 
+    // Image uploader file input
+    const fileInput = $('#apmFileInput');
+    if (fileInput) {
+      fileInput.onchange = e => {
+        const file = e.target.files && e.target.files[0];
+        if (!file) return;
+        if (!file.type.startsWith('image/')) {
+          toast('Please select a valid image file (JPG, PNG, WebP).', 'error');
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = ev => {
+          setProductEditorImage(ev.target.result);
+          toast('Custom image uploaded!');
+        };
+        reader.readAsDataURL(file);
+      };
+    }
+
+    // Presets click delegator
+    const presetsGrid = $('#apmPresetsGrid');
+    if (presetsGrid) {
+      presetsGrid.onclick = e => {
+        const btn = e.target.closest('[data-img]');
+        if (btn) {
+          setProductEditorImage(btn.dataset.img);
+          if (btn.dataset.emoji) $('#apmEmoji').value = btn.dataset.emoji;
+        }
+      };
+    }
+
+    // Reset image button
+    const clearImgBtn = $('#apmClearImgBtn');
+    if (clearImgBtn) {
+      clearImgBtn.onclick = () => {
+        const nameVal = $('#apmName').value;
+        const catVal = $('#apmCategory').value;
+        setProductEditorImage(resolveProductImage(nameVal, catVal, ''));
+      };
+    }
+
+    // Live preview when manual URL input changes
+    const imgInput = $('#apmImg');
+    if (imgInput) {
+      imgInput.oninput = () => {
+        const val = imgInput.value.trim();
+        const imgEl = $('#apmPreviewImg');
+        if (imgEl) imgEl.src = val || 'product-2-still.jpg';
+      };
+    }
+
+    // Auto-suggest preset when product title is typed
+    const nameInput = $('#apmName');
+    if (nameInput) {
+      nameInput.oninput = () => {
+        const idVal = $('#apmId').value;
+        const curImg = $('#apmImg').value.trim();
+        if (!idVal && (!curImg || !curImg.startsWith('data:image'))) {
+          const suggested = resolveProductImage(nameInput.value, $('#apmCategory').value, '');
+          setProductEditorImage(suggested);
+        }
+      };
+    }
+
+    // Auto-suggest preset when category changes
+    const catInput = $('#apmCategory');
+    if (catInput) {
+      catInput.onchange = () => {
+        const idVal = $('#apmId').value;
+        const curImg = $('#apmImg').value.trim();
+        if (!idVal && (!curImg || !curImg.startsWith('data:image'))) {
+          const suggested = resolveProductImage($('#apmName').value, catInput.value, '');
+          setProductEditorImage(suggested);
+        }
+      };
+    }
+
     // Product Form Submit
     const prodForm = $('#adminProductForm');
     if (prodForm) prodForm.onsubmit = saveProductForm;
   }
 
   /* ---------- init ---------- */
+  // Auto-correct any product named "wotch" or "watch" that accidentally received headphone images
+  PRODUCTS.forEach(p => {
+    const q = (p.name || '').toLowerCase();
+    if ((q.includes('watch') || q.includes('wotch')) && (p.img === 'product-1-still.jpg' || (p.images && p.images[0] === 'product-1-still.jpg'))) {
+      p.images = ['product-2-still.jpg', 'product-2-2.jpg', 'product-2-3.jpg'];
+      p.img = 'product-2-still.jpg';
+      p.still = 'product-2-still.jpg';
+      if (!p.emoji || p.emoji === '🛍️') p.emoji = '⌚';
+      if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
+        window.ShopWaveFirebase.saveProduct(p).catch(() => {});
+      }
+    }
+  });
+  store.set('sw_custom_products', PRODUCTS);
+
   applyPrefs(); renderCategoryUI();
   $('#grid').innerHTML = Array.from({ length: 6 }, () => '<div class="skeleton" aria-hidden="true"></div>').join('');
   setTimeout(renderProducts, 450);

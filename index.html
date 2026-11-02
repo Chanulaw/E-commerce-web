@@ -1404,10 +1404,74 @@
             <label for="apmRating">Rating (1.0 - 5.0)</label>
             <input id="apmRating" type="number" min="1" max="5" step="0.1" value="4.6">
           </div>
-          <div class="field span2">
-            <label for="apmImg">Image URL or Local File Path</label>
-            <input id="apmImg" placeholder="product-1-still.jpg or https://images.unsplash.com/...">
-            <small class="muted">Enter local file (e.g. product-1-still.jpg) or full web image URL.</small>
+          <div class="field span2 apm-image-section">
+            <label>Product Image</label>
+            <div class="apm-preview-wrap">
+              <div class="apm-preview-box" id="apmPreviewBox">
+                <img id="apmPreviewImg" src="product-2-still.jpg" alt="Preview">
+                <span id="apmPreviewEmoji" class="p-emoji" style="display:none;">🛍️</span>
+              </div>
+              <div class="apm-preview-info">
+                <div class="apm-upload-btns">
+                  <label for="apmFileInput" class="btn btn-sm btn-outline apm-file-label">
+                    📁 Upload Image from Device
+                  </label>
+                  <input type="file" id="apmFileInput" accept="image/*" style="display:none;">
+                  <button type="button" class="btn btn-sm btn-ghost" id="apmClearImgBtn">Reset</button>
+                </div>
+                <small class="muted">Upload your own photo or pick a preset image below:</small>
+              </div>
+            </div>
+
+            <div class="apm-presets-wrap">
+              <label class="small muted" style="font-weight:700;">Choose From Store Presets (Click to select):</label>
+              <div class="apm-presets-grid" id="apmPresetsGrid">
+                <button type="button" class="apm-preset-btn" data-img="product-2-still.jpg" data-emoji="⌚" title="Smart Watch">
+                  <img src="product-2-still.jpg" alt="Watch">
+                  <span>⌚ Watch</span>
+                </button>
+                <button type="button" class="apm-preset-btn" data-img="product-1-still.jpg" data-emoji="🎧" title="Headphones">
+                  <img src="product-1-still.jpg" alt="Headphones">
+                  <span>🎧 Audio</span>
+                </button>
+                <button type="button" class="apm-preset-btn" data-img="product-3-still.jpg" data-emoji="🔊" title="Speaker">
+                  <img src="product-3-still.jpg" alt="Speaker">
+                  <span>🔊 Speaker</span>
+                </button>
+                <button type="button" class="apm-preset-btn" data-img="product-4-still.jpg" data-emoji="🔋" title="Power Bank">
+                  <img src="product-4-still.jpg" alt="Power Bank">
+                  <span>🔋 Battery</span>
+                </button>
+                <button type="button" class="apm-preset-btn" data-img="product-5-still.jpg" data-emoji="👕" title="T-Shirt">
+                  <img src="product-5-still.jpg" alt="T-Shirt">
+                  <span>👕 Shirt</span>
+                </button>
+                <button type="button" class="apm-preset-btn" data-img="product-6-still.jpg" data-emoji="🧥" title="Jacket">
+                  <img src="product-6-still.jpg" alt="Jacket">
+                  <span>🧥 Jacket</span>
+                </button>
+                <button type="button" class="apm-preset-btn" data-img="product-7-still.jpg" data-emoji="👟" title="Shoes">
+                  <img src="product-7-still.jpg" alt="Shoes">
+                  <span>👟 Shoes</span>
+                </button>
+                <button type="button" class="apm-preset-btn" data-img="product-8-still.jpg" data-emoji="🍵" title="Ceylon Tea">
+                  <img src="product-8-still.jpg" alt="Tea">
+                  <span>🍵 Tea</span>
+                </button>
+                <button type="button" class="apm-preset-btn" data-img="product-9-still.jpg" data-emoji="🥥" title="Coconut Oil">
+                  <img src="product-9-still.jpg" alt="Oil">
+                  <span>🥥 Oil</span>
+                </button>
+                <button type="button" class="apm-preset-btn" data-img="product-10-still.jpg" data-emoji="🍫" title="Chocolate">
+                  <img src="product-10-still.jpg" alt="Chocolate">
+                  <span>🍫 Food</span>
+                </button>
+              </div>
+            </div>
+
+            <div style="margin-top:0.4rem;">
+              <input id="apmImg" placeholder="Or enter direct image URL / filename: product-2-still.jpg or https://...">
+            </div>
           </div>
           <div class="field span2">
             <label for="apmDesc">Product Description *</label>
