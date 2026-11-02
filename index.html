@@ -1215,10 +1215,6 @@
       <!-- Dashboard Header -->
       <div class="admin-dash-header">
         <div class="admin-title-wrap">
-          <div class="admin-badge-pill">
-            <span class="auth-badge-pulse" aria-hidden="true"></span>
-            <span id="adminCloudStatus">Live Cloud Sync Active</span>
-          </div>
           <h2 id="adminDashTitle">ShopWave Administration Console</h2>
           <p class="muted small">Real-time store management: update order statuses, manage catalog pricing, and maintain stock.</p>
         </div>
@@ -1276,30 +1272,16 @@
               <strong class="stat-val" id="adminStatProducts">10</strong>
             </div>
           </div>
-          <div class="admin-stat-card">
+          <div class="admin-stat-card admin-stat-clickable" id="adminStatCardUsers" role="button" tabindex="0" title="Click to view all registered users and their orders">
             <div class="stat-icon icon-users" aria-hidden="true">👥</div>
             <div class="stat-content">
-              <span class="stat-label">Users / Shoppers</span>
+              <span class="stat-label">Users / Shoppers ↗</span>
               <strong class="stat-val" id="adminStatUsers">0</strong>
             </div>
           </div>
         </div>
 
         <div class="admin-overview-sections">
-          <!-- Active & Logged In Users Card -->
-          <div class="admin-box" style="margin-bottom: 1.5rem;">
-            <div class="admin-box-head">
-              <div style="display:flex;align-items:center;gap:0.6rem;">
-                <h3>Active &amp; Registered Shoppers</h3>
-                <span class="badge" id="adminOverviewUsersBadge">0</span>
-              </div>
-              <button type="button" class="btn btn-sm btn-outline" id="adminGoCustomersBtn">View Full Customers Tab →</button>
-            </div>
-            <div id="adminOverviewUsersList" class="admin-recent-orders-list">
-              <p class="muted">Loading user accounts…</p>
-            </div>
-          </div>
-
           <div class="admin-box">
             <div class="admin-box-head">
               <h3>Latest Customer Orders</h3>
@@ -1544,6 +1526,39 @@
 
         <div class="aod-foot-btns">
           <button type="button" class="btn btn-danger btn-sm" id="aodDeleteOrderBtn">🗑️ Delete Order</button>
+          <button type="button" class="btn btn-secondary btn-sm" data-close>Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== ADMIN USERS & ORDERS MODAL ==================== -->
+  <div class="overlay" id="adminUsersModal" role="dialog" aria-modal="true" aria-labelledby="aumTitle" hidden>
+    <div class="modal modal-wide admin-users-dialog">
+      <button class="icon-btn modal-close" data-close aria-label="Close shoppers directory">✕</button>
+      <div class="aod-head">
+        <div class="aod-badge-wrap">
+          <span class="badge" id="aumCountBadge">0 Users</span>
+          <span class="muted small" id="aumActiveCount">0 Active Now</span>
+        </div>
+        <h2 id="aumTitle">👥 Registered Shoppers &amp; Order Details</h2>
+        <p class="muted small">Overview of customer accounts, live session status, and order purchase history.</p>
+      </div>
+
+      <div class="admin-toolbar" style="margin-bottom: 1rem;">
+        <div class="admin-search-wrap">
+          <span class="admin-search-icon" aria-hidden="true">🔍</span>
+          <input type="search" id="adminUserSearch" placeholder="Search shoppers by name, email, or role…">
+        </div>
+      </div>
+
+      <div class="admin-users-modal-body" id="adminUsersModalBody">
+        <p class="muted">Loading shoppers directory…</p>
+      </div>
+
+      <div class="aod-actions" style="margin-top: 1rem;">
+        <span class="muted small">Tip: Click "View Order Details 🔍" on any customer order to inspect line items or update status.</span>
+        <div class="aod-foot-btns">
           <button type="button" class="btn btn-secondary btn-sm" data-close>Close</button>
         </div>
       </div>

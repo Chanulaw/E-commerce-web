@@ -1744,19 +1744,13 @@
     renderAdminOrders();
     renderAdminProducts();
     renderAdminCustomers();
+    if ($('#adminUsersModal') && !$('#adminUsersModal').hidden) {
+      renderAdminUsersModal();
+    }
   }
 
-  // Render Overview
-  function renderAdminOverview() {
-    const totalRev = adminOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
-    const procCount = adminOrders.filter(o => (o.status || 'Processing') === 'Processing').length;
-
-    if ($('#adminStatRevenue')) $('#adminStatRevenue').textContent = money(totalRev);
-    if ($('#adminStatOrders')) $('#adminStatOrders').textContent = adminOrders.length;
-    if ($('#adminStatProcessing')) $('#adminStatProcessing').textContent = procCount;
-    if ($('#adminStatProducts')) $('#adminStatProducts').textContent = PRODUCTS.length;
-
-    // Compile users overview
+  // Compile all registered and active shoppers list
+  function getAdminShoppersList() {
     const users = getUsers();
     const curU = currentUser();
     const allOverviewUsers = [];
@@ -1782,47 +1776,22 @@
       });
     });
 
+    return allOverviewUsers;
+  }
+
+  // Render Overview
+  function renderAdminOverview() {
+    const totalRev = adminOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+    const procCount = adminOrders.filter(o => (o.status || 'Processing') === 'Processing').length;
+
+    if ($('#adminStatRevenue')) $('#adminStatRevenue').textContent = money(totalRev);
+    if ($('#adminStatOrders')) $('#adminStatOrders').textContent = adminOrders.length;
+    if ($('#adminStatProcessing')) $('#adminStatProcessing').textContent = procCount;
+    if ($('#adminStatProducts')) $('#adminStatProducts').textContent = PRODUCTS.length;
+
+    const allOverviewUsers = getAdminShoppersList();
     if ($('#adminStatUsers')) $('#adminStatUsers').textContent = allOverviewUsers.length;
     if ($('#adminOverviewUsersBadge')) $('#adminOverviewUsersBadge').textContent = allOverviewUsers.length;
-
-    const uBox = $('#adminOverviewUsersList');
-    if (uBox) {
-      uBox.innerHTML = `
-        <table class="aod-table">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Email</th>
-              <th>Role</th>
-              <th>Status</th>
-              <th>Orders</th>
-              <th>Registered</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${allOverviewUsers.map(u => {
-              const uOrders = adminOrders.filter(o => (o.email && o.email.toLowerCase() === (u.email || '').toLowerCase()) || (u.id && o.uid === u.id));
-              const initial = (u.name || 'U').trim()[0].toUpperCase();
-              return `
-                <tr>
-                  <td>
-                    <div class="overview-user-cell">
-                      <span class="user-avatar-sm ${u.role === 'admin' ? 'admin' : ''}">${u.role === 'admin' ? '⚡' : initial}</span>
-                      <strong>${esc(u.name || 'Customer')}</strong>
-                    </div>
-                  </td>
-                  <td>${esc(u.email || 'N/A')}</td>
-                  <td><span class="badge-status ${u.role === 'admin' ? 'admin' : 'member'}">${u.role === 'admin' ? 'Administrator' : 'Customer'}</span></td>
-                  <td><span class="badge-status ${u.isOnline ? 'active' : 'member'}">${u.isOnline ? '🟢 Active Now' : '⚪ Registered'}</span></td>
-                  <td><strong>${uOrders.length}</strong> ${uOrders.length === 1 ? 'order' : 'orders'}</td>
-                  <td>${new Date(u.created || Date.now()).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}</td>
-                </tr>
-              `;
-            }).join('')}
-          </tbody>
-        </table>
-      `;
-    }
 
     const recent = adminOrders.slice(0, 5);
     const box = $('#adminRecentOrdersList');
@@ -1960,6 +1929,9 @@
     toast(`Order #${orderId} process updated to "${newStatus}"! (Synced to Firestore)`);
     renderAdminOverview();
     renderAdminOrders();
+    if ($('#adminUsersModal') && !$('#adminUsersModal').hidden) {
+      renderAdminUsersModal();
+    }
     if (activeDetailOrder && (activeDetailOrder.id || activeDetailOrder.orderId) === orderId) {
       openOrderDetailModal(orderId);
     }
@@ -2046,6 +2018,9 @@
     toast(`Order #${orderId} deleted.`);
     renderAdminOverview();
     renderAdminOrders();
+    if ($('#adminUsersModal') && !$('#adminUsersModal').hidden) {
+      renderAdminUsersModal();
+    }
   }
 
   // Render Products Tab
@@ -2373,6 +2348,132 @@
     }
   }
 
+  // Render and open Users & Order Details Modal
+  function renderAdminUsersModal() {
+    const q = ($('#adminUserSearch')?.value || '').trim().toLowerCase();
+    const allShoppers = getAdminShoppersList();
+
+    const filtered = allShoppers.filter(u => {
+      if (!q) return true;
+      const matchBasic = (u.name || '').toLowerCase().includes(q) ||
+                         (u.email || '').toLowerCase().includes(q) ||
+                         (u.role || '').toLowerCase().includes(q);
+      if (matchBasic) return true;
+      const uOrders = adminOrders.filter(o =>
+        (o.email && o.email.toLowerCase() === (u.email || '').toLowerCase()) ||
+        (u.id && o.uid === u.id)
+      );
+      return uOrders.some(o => String(o.id || o.orderId || '').toLowerCase().includes(q));
+    });
+
+    if ($('#aumCountBadge')) $('#aumCountBadge').textContent = `${allShoppers.length} Users`;
+    const activeCount = allShoppers.filter(u => u.isOnline).length;
+    if ($('#aumActiveCount')) $('#aumActiveCount').textContent = `${activeCount} Active Now`;
+
+    const body = $('#adminUsersModalBody');
+    if (!body) return;
+
+    if (!filtered.length) {
+      body.innerHTML = `<p class="muted" style="padding:1.5rem;text-align:center;">No shoppers match "${esc(q)}".</p>`;
+      return;
+    }
+
+    body.innerHTML = filtered.map(u => {
+      const uOrders = adminOrders.filter(o =>
+        (o.email && o.email.toLowerCase() === (u.email || '').toLowerCase()) ||
+        (u.id && o.uid === u.id)
+      );
+      const totalSpent = uOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+      const initial = (u.name || 'U').trim()[0].toUpperCase();
+      const joinedDate = new Date(u.created || Date.now()).toLocaleDateString(undefined, {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+      });
+
+      const ordersHtml = uOrders.length ? `
+        <div class="admin-user-card-orders">
+          <div class="admin-user-orders-summary">
+            <span>🛍️ Order History (${uOrders.length} ${uOrders.length === 1 ? 'order' : 'orders'})</span>
+            <span style="color:var(--primary);">${money(totalSpent)}</span>
+          </div>
+          <table class="admin-user-orders-table">
+            <thead>
+              <tr>
+                <th>Order ID</th>
+                <th>Date</th>
+                <th>Items</th>
+                <th>Status</th>
+                <th>Total</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${uOrders.map(o => {
+                const oid = esc(o.id || o.orderId);
+                const st = esc(o.status || 'Processing');
+                const oDate = o.date ? new Date(o.date).toLocaleDateString() : 'N/A';
+                const itmCount = (o.items || []).reduce((n, i) => n + (i.quantity || 1), 0);
+                return `
+                  <tr>
+                    <td><code>#${oid}</code></td>
+                    <td>${oDate}</td>
+                    <td>${itmCount} items</td>
+                    <td><span class="badge-status ${st.toLowerCase()}">${st}</span></td>
+                    <td><strong>${money(o.total || 0)}</strong></td>
+                    <td>
+                      <button type="button" class="btn btn-sm btn-outline btn-view-user-order" data-order-id="${oid}" style="padding:0.2rem 0.5rem;font-size:0.75rem;">
+                        View Details 🔍
+                      </button>
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      ` : `
+        <div class="admin-user-card-orders" style="display:flex;justify-content:space-between;align-items:center;">
+          <span class="muted small">No customer orders placed yet.</span>
+          <span class="muted small">Total Spent: Rs. 0</span>
+        </div>
+      `;
+
+      return `
+        <div class="admin-user-card">
+          <div class="admin-user-card-head">
+            <div class="admin-user-card-meta">
+              <span class="user-avatar-sm ${u.role === 'admin' ? 'admin' : ''}">${u.role === 'admin' ? '⚡' : initial}</span>
+              <div>
+                <strong style="font-size:0.98rem;">${esc(u.name || 'Customer')}</strong>
+                <div class="muted small">${esc(u.email || 'N/A')}</div>
+              </div>
+            </div>
+            <div class="admin-user-card-badges">
+              <span class="badge-status ${u.role === 'admin' ? 'admin' : 'member'}">${u.role === 'admin' ? 'Administrator' : 'Customer'}</span>
+              <span class="badge-status ${u.isOnline ? 'active' : 'member'}">${u.isOnline ? '🟢 Active Now' : '⚪ Registered'}</span>
+              <span class="muted small" style="margin-left:0.3rem;">Joined ${joinedDate}</span>
+            </div>
+          </div>
+          ${ordersHtml}
+        </div>
+      `;
+    }).join('');
+
+    body.querySelectorAll('.btn-view-user-order').forEach(btn => {
+      btn.onclick = (e) => {
+        e.stopPropagation();
+        const oid = btn.dataset.orderId;
+        if (oid) openOrderDetailModal(oid);
+      };
+    });
+  }
+
+  function openUsersModal() {
+    renderAdminUsersModal();
+    openModal('adminUsersModal');
+  }
+
   // Wire all Admin UI Event Listeners
   function initAdminEvents() {
     // Admin Sign Out
@@ -2431,6 +2532,66 @@
         const tab = $('#tabAdminCustomers');
         if (tab) tab.click();
       };
+    }
+
+    // Shoppers / Users Stat Card click & keyboard navigation
+    const statUsersCard = $('#adminStatCardUsers') || $('#adminStatUsers')?.closest('.admin-stat-card');
+    if (statUsersCard) {
+      statUsersCard.onclick = () => openUsersModal();
+      statUsersCard.onkeydown = (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          openUsersModal();
+        }
+      };
+    }
+
+    // Search input inside Users modal
+    const userSearch = $('#adminUserSearch');
+    if (userSearch) {
+      userSearch.oninput = () => renderAdminUsersModal();
+    }
+
+    // Interactive Admin Overview Stat Cards
+    const statOrdersCard = $('#adminStatOrders')?.closest('.admin-stat-card');
+    if (statOrdersCard) {
+      statOrdersCard.classList.add('admin-stat-clickable');
+      statOrdersCard.style.cursor = 'pointer';
+      statOrdersCard.title = 'Click to switch to Orders Management';
+      statOrdersCard.onclick = () => {
+        const tab = $('#tabAdminOrders');
+        if (tab) tab.click();
+      };
+    }
+
+    const statProcessingCard = $('#adminStatProcessing')?.closest('.admin-stat-card');
+    if (statProcessingCard) {
+      statProcessingCard.classList.add('admin-stat-clickable');
+      statProcessingCard.style.cursor = 'pointer';
+      statProcessingCard.title = 'Click to view Pending/Processing orders';
+      statProcessingCard.onclick = () => {
+        const tab = $('#tabAdminOrders');
+        if (tab) tab.click();
+        const procChip = $(`#adminOrderFilterPills [data-order-status="Processing"]`);
+        if (procChip) procChip.click();
+      };
+    }
+
+    const statProductsCard = $('#adminStatProducts')?.closest('.admin-stat-card');
+    if (statProductsCard) {
+      statProductsCard.classList.add('admin-stat-clickable');
+      statProductsCard.style.cursor = 'pointer';
+      statProductsCard.title = 'Click to switch to Products Management';
+      statProductsCard.onclick = () => {
+        const tab = $('#tabAdminProducts');
+        if (tab) tab.click();
+      };
+    }
+
+    // Tab 4 Customers list item click to view orders
+    const cBox = $('#adminCustomersList');
+    if (cBox) {
+      cBox.onclick = () => openUsersModal();
     }
 
     // Orders Filter Pills
