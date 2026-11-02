@@ -284,8 +284,21 @@ window.ShopWaveFirebase = {
     try {
       const snap = await fbDb.collection('products').get();
       if (snap.empty) return [];
-      const list = snap.docs.map(doc => ({ id: Number(doc.id), ...doc.data() }));
-      list.sort((a, b) => a.id - b.id);
+      const list = snap.docs.map(doc => {
+        const data = doc.data() || {};
+        const rawId = data.id !== undefined ? data.id : doc.id;
+        const numId = Number(rawId);
+        const finalId = (!isNaN(numId) && String(numId) === String(rawId).trim()) ? numId : rawId;
+        return {
+          ...data,
+          id: finalId
+        };
+      });
+      list.sort((a, b) => {
+        const numA = Number(a.id), numB = Number(b.id);
+        if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+        return String(a.id).localeCompare(String(b.id));
+      });
       return list;
     } catch (err) {
       console.warn('Could not fetch Firestore products:', err);

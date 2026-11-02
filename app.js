@@ -50,7 +50,7 @@
   }
   refreshProductMedia();
   const catName = id => CATEGORIES.find(c => c.id === id).name;
-  const byId = id => PRODUCTS.find(p => p.id === Number(id));
+  const byId = id => PRODUCTS.find(p => String(p.id) === String(id));
   const PROMOS = { SAVE10: { pct: 10, label: '10% off' }, WELCOME5: { pct: 5, label: '5% off' } };
   const FREE_SHIP = 15000, SHIP_FEE = 450;
 
@@ -256,7 +256,15 @@
     const s = getStock(p.id), inWish = wish.includes(p.id);
     const activeIdx = getCardImgIdx(p.id);
     const imgs = p.images && p.images.length ? p.images : [p.still || p.img];
-    return `<article class="card" style="animation-delay:${i * 60}ms" data-id="${p.id}">
+    const isAdm = isAdmin();
+    return `<article class="card ${isAdm ? 'is-admin-card' : ''}" style="animation-delay:${i * 60}ms" data-id="${p.id}">
+      ${isAdm ? `
+        <div class="card-admin-bar">
+          <span class="card-admin-pill">Admin</span>
+          <button type="button" class="card-admin-btn btn-admin-edit" data-card-admin="edit" data-id="${p.id}" title="Edit ${esc(p.name)}">✏️ Edit</button>
+          <button type="button" class="card-admin-btn btn-admin-del" data-card-admin="delete" data-id="${p.id}" title="Delete ${esc(p.name)}">🗑️</button>
+        </div>
+      ` : ''}
       <button class="wish" data-action="wish" aria-pressed="${inWish}" aria-label="${inWish ? 'Remove' : 'Add'} ${p.name} ${inWish ? 'from' : 'to'} wishlist">${inWish ? '♥' : '♡'}</button>
       <div class="card-media-wrap">
         <button class="p-media" data-action="view" style="background:${grad(p)}" aria-label="View details for ${p.name}">
@@ -315,7 +323,21 @@
   }
   $('#grid').addEventListener('click', e => {
     const card = e.target.closest('.card'); if (!card) return;
-    const id = Number(card.dataset.id);
+    const id = card.dataset.id;
+
+    const adminBtn = e.target.closest('[data-card-admin]');
+    if (adminBtn) {
+      e.stopPropagation();
+      e.preventDefault();
+      const action = adminBtn.dataset.cardAdmin;
+      const pid = adminBtn.dataset.id;
+      if (action === 'edit') {
+        openProductEditor(pid);
+      } else if (action === 'delete') {
+        deleteProduct(pid);
+      }
+      return;
+    }
 
     const navBtn = e.target.closest('[data-card-nav]');
     if (navBtn) {
@@ -536,7 +558,9 @@
   }
 
   function openProduct(id, initialIdx = 0) {
-    const p = byId(id); pmId = p.id; pmQty = 1;
+    const p = byId(id);
+    if (!p) return;
+    pmId = p.id; pmQty = 1;
     pmImgIdx = initialIdx || 0;
     renderModalGallery(p);
     $('#pmCat').textContent = catName(p.category);
@@ -550,7 +574,9 @@
   }
 
   function refreshProductModal() {
-    if (pmId == null) return; const p = byId(pmId), s = getStock(p.id), inCart = cart[p.id] || 0, room = s - inCart;
+    if (pmId == null) return; const p = byId(pmId);
+    if (!p) return;
+    const s = getStock(p.id), inCart = cart[p.id] || 0, room = s - inCart;
     const st = $('#pmStock');
     if (s === 0) { st.className = 'stock-line out'; st.textContent = '✕ Out of stock'; }
     else if (s <= 5) { st.className = 'stock-line low'; st.textContent = `⚠ Only ${s} left in stock`; }
@@ -560,6 +586,8 @@
     $('#pmMinus').disabled = pmQty <= 1; $('#pmPlus').disabled = pmQty >= room;
     $('#pmAdd').disabled = room < 1;
     $('#pmAdd').textContent = s === 0 ? 'Out of stock' : room < 1 ? 'Max quantity in basket' : `Add ${pmQty} to basket`;
+    const pmAdminBar = $('#pmAdminBar');
+    if (pmAdminBar) pmAdminBar.hidden = !isAdmin();
     syncProductModalWish();
   }
 
@@ -568,6 +596,23 @@
   $('#pmPlus').onclick = () => { pmQty++; refreshProductModal(); };
   $('#pmAdd').onclick = () => { addToCart(pmId, pmQty, $('#pmMedia img, #pmMedia span')); refreshProductModal(); };
   $('#pmWish').onclick = () => toggleWish(pmId);
+
+  const pmAdminEditBtn = $('#pmAdminEditBtn');
+  if (pmAdminEditBtn) {
+    pmAdminEditBtn.onclick = () => {
+      if (pmId == null) return;
+      const curId = pmId;
+      closeModal('productOverlay');
+      setTimeout(() => openProductEditor(curId), 250);
+    };
+  }
+  const pmAdminDeleteBtn = $('#pmAdminDeleteBtn');
+  if (pmAdminDeleteBtn) {
+    pmAdminDeleteBtn.onclick = () => {
+      if (pmId == null) return;
+      deleteProduct(pmId);
+    };
+  }
 
   const pmPrevBtn = $('#pmPrev'); if (pmPrevBtn) pmPrevBtn.onclick = () => setModalImage(pmImgIdx - 1);
   const pmNextBtn = $('#pmNext'); if (pmNextBtn) pmNextBtn.onclick = () => setModalImage(pmImgIdx + 1);
@@ -793,7 +838,7 @@
       for (const id of Object.keys(cart)) {
         if (cart[id] > getStock(id)) { toast(`${byId(id).name} no longer has enough stock. Please update your basket.`, 'error'); btn.disabled = false; btn.textContent = 'Place order'; closeModal('checkoutOverlay'); cart[id] = Math.max(0, getStock(id)); if (!cart[id]) delete cart[id]; save(); updateCounts(); renderCart(); return; }
       }
-      const order = { id: 'SW-' + Date.now().toString(36).toUpperCase(), date: new Date().toISOString(), items: Object.keys(cart).map(id => ({ id: +id, name: byId(id).name, qty: cart[id], price: byId(id).price })), total: t.total, promo, uid: session ? session.uid : null, pay: payMethod(), name: $('#fullName').value.trim(), email: $('#email').value.trim(), city: $('#city').value.trim(), address: $('#address').value.trim(), phone: $('#phone').value.trim(), status: 'Processing' };
+      const order = { id: 'SW-' + Date.now().toString(36).toUpperCase(), date: new Date().toISOString(), items: Object.keys(cart).map(id => ({ id: byId(id).id, name: byId(id).name, qty: cart[id], price: byId(id).price })), total: t.total, promo, uid: session ? session.uid : null, pay: payMethod(), name: $('#fullName').value.trim(), email: $('#email').value.trim(), city: $('#city').value.trim(), address: $('#address').value.trim(), phone: $('#phone').value.trim(), status: 'Processing' };
       Object.keys(cart).forEach(id => stock[id] = getStock(id) - cart[id]);
       orders.unshift(order);
       const allOrders = store.get('sw_all_orders', []);
@@ -1969,19 +2014,25 @@
 
   // Open Product Editor Modal
   function openProductEditor(id = null) {
-    const isEdit = id != null;
+    const isEdit = id != null && id !== '';
     $('#apmTitle').textContent = isEdit ? 'Edit Product' : 'Add New Product';
     $('#apmSubtitle').textContent = isEdit ? 'Modify pricing, stock and details synced to Cloud Firestore.' : 'Create a brand new item in your catalog.';
     $('#apmSubmitBtn').textContent = isEdit ? 'Update Product in Firestore' : 'Add Product to Firestore';
     $('#apmId').value = isEdit ? id : '';
 
+    // Clear previous errors
+    $$('#adminProductModal .error').forEach(p => p.textContent = '');
+
     if (isEdit) {
       const p = byId(id);
-      if (!p) return;
-      $('#apmName').value = p.name;
-      $('#apmCategory').value = p.category;
+      if (!p) {
+        toast('Product not found.', 'error');
+        return;
+      }
+      $('#apmName').value = p.name || '';
+      $('#apmCategory').value = p.category || 'electronics';
       $('#apmStock').value = getStock(p.id);
-      $('#apmPrice').value = p.price;
+      $('#apmPrice').value = p.price || '';
       $('#apmWas').value = p.was || '';
       $('#apmEmoji').value = p.emoji || '🛍️';
       $('#apmRating').value = p.rating || 4.5;
@@ -1990,6 +2041,7 @@
       $('#apmFeatures').value = (p.features || []).join('\n');
     } else {
       $('#adminProductForm').reset();
+      $('#apmId').value = '';
       $('#apmStock').value = 10;
       $('#apmEmoji').value = '🛍️';
       $('#apmRating').value = 4.5;
@@ -2002,7 +2054,7 @@
   async function saveProductForm(e) {
     e.preventDefault();
     const idVal = $('#apmId').value;
-    const isEdit = !!idVal;
+    const isEdit = Boolean(idVal);
 
     const name = $('#apmName').value.trim();
     const category = $('#apmCategory').value;
@@ -2022,8 +2074,11 @@
 
     let p;
     if (isEdit) {
-      p = byId(Number(idVal));
-      if (!p) return;
+      p = byId(idVal);
+      if (!p) {
+        toast('Could not find product to update.', 'error');
+        return;
+      }
       p.name = name;
       p.category = category;
       p.price = price;
@@ -2033,13 +2088,23 @@
       p.rating = rating;
       p.desc = desc;
       p.features = features;
+      if (category === 'clothing') p.c = ['#0ea5e9', '#38bdf8'];
+      else if (category === 'food') p.c = ['#16a34a', '#84cc16'];
+      else p.c = ['#6366f1', '#a78bfa'];
+
       if (imgVal) {
-        p.images = [imgVal];
+        if (!p.images || !p.images.length || p.images[0] !== imgVal) {
+          p.images = [imgVal, ...(p.images || []).filter(x => x !== imgVal)];
+        }
         p.img = imgVal;
         p.still = imgVal;
       }
     } else {
-      const newId = Math.max(0, ...PRODUCTS.map(x => x.id)) + 1;
+      const maxNumericId = PRODUCTS.reduce((max, x) => {
+        const n = Number(x.id);
+        return !isNaN(n) ? Math.max(max, n) : max;
+      }, 0);
+      const newId = maxNumericId + 1;
       const defaultPalette = category === 'clothing' ? ['#0ea5e9', '#38bdf8'] : category === 'food' ? ['#16a34a', '#84cc16'] : ['#6366f1', '#a78bfa'];
       p = {
         id: newId,
@@ -2070,13 +2135,13 @@
     if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
       try {
         await window.ShopWaveFirebase.saveProduct(p);
-        toast(`Product "${p.name}" saved to Cloud Firestore!`);
+        toast(`Product "${p.name}" synced to Cloud Firestore!`);
       } catch (err) {
         console.warn('Could not save product to Firestore:', err);
-        toast(`Saved locally! (Firebase sync error)`, 'error');
+        toast(`Product "${p.name}" saved locally! (Firebase sync error)`, 'error');
       }
     } else {
-      toast(`Product "${p.name}" saved locally!`);
+      toast(`Product "${p.name}" saved successfully!`);
     }
 
     closeModal('adminProductModal');
@@ -2085,13 +2150,19 @@
     renderCategoryUI();
     renderAdminProducts();
     renderAdminOverview();
+    if (pmId != null && String(pmId) === String(p.id)) {
+      openProduct(p.id);
+    }
   }
 
   // Delete product
   async function deleteProduct(id) {
     const p = byId(id);
-    if (!p) return;
-    if (!confirm(`Are you sure you want to permanently delete "${p.name}" from the store and Cloud Firestore?`)) return;
+    if (!p) {
+      toast('Product not found.', 'error');
+      return;
+    }
+    if (!confirm(`Are you sure you want to permanently delete "${p.name}" from catalog and database?`)) return;
 
     // Delete from Firestore
     if (window.ShopWaveFirebase && window.ShopWaveFirebase.isReady()) {
@@ -2103,16 +2174,21 @@
     }
 
     // Remove from array & store
-    PRODUCTS = PRODUCTS.filter(x => x.id !== id);
+    PRODUCTS = PRODUCTS.filter(x => String(x.id) !== String(id));
     delete stock[id];
     delete cart[id];
-    wish = wish.filter(x => x !== id);
+    wish = wish.filter(x => String(x) !== String(id));
 
     store.set('sw_custom_products', PRODUCTS);
     store.set(KEYS.stock, stock);
     save();
 
-    toast(`Product "${p.name}" removed from catalog.`);
+    // Close product modal if this item was open
+    if (pmId != null && String(pmId) === String(id)) {
+      closeModal('productOverlay');
+    }
+
+    toast(`Product "${p.name}" permanently deleted.`);
     renderProducts();
     renderCategoryUI();
     renderAdminProducts();
@@ -2284,12 +2360,12 @@
       productsContainer.onclick = e => {
         const editBtn = e.target.closest('[data-edit-product]');
         if (editBtn) {
-          openProductEditor(Number(editBtn.dataset.editProduct));
+          openProductEditor(editBtn.dataset.editProduct);
           return;
         }
         const delBtn = e.target.closest('[data-delete-product]');
         if (delBtn) {
-          deleteProduct(Number(delBtn.dataset.deleteProduct));
+          deleteProduct(delBtn.dataset.deleteProduct);
         }
       };
     }
